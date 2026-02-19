@@ -123,6 +123,16 @@ Use the helper script to trigger `POST /cities` against local API by default:
 - Auto-resolves `country` and `country_code` from city name if omitted
 - Override API URL/key with `--api-url` and `--api-key`
 
+Generate a starter set of 30 cities sequentially:
+
+```bash
+./scripts/research_cities_batch.sh
+```
+
+- Uses a predefined list of 30 major cities
+- Calls `./scripts/research_city.sh` one-by-one
+- Optionally throttle requests: `--delay-seconds 2`
+
 ## Tests
 
 - Tests run against real Postgres
