@@ -61,6 +61,7 @@ docker run -p 8000:8000 --env-file .env groundwork
 - `GET /cities/{slug}` city JSON
 - `GET /{slug}` city HTML guide
 - `POST /cities` admin-only generation endpoint (`X-API-Key`)
+- `GET /requests` public HTML page listing submitted city requests
 - `POST /requests` public city request intake
 - `GET /health` healthcheck
 
@@ -108,8 +109,47 @@ Apply migrations to a database URL:
 # or: supabase db push --db-url "$DATABASE_URL"
 ```
 
+## Generate A City
+
+Use the helper script to trigger `POST /cities` against local API by default:
+
+```bash
+./scripts/research_city.sh \
+  --city-name "Barcelona"
+```
+
+- Defaults to `http://127.0.0.1:8000`
+- Reads `ADMIN_API_KEY` from `.env` automatically
+- Auto-resolves `country` and `country_code` from city name if omitted
+- Override API URL/key with `--api-url` and `--api-key`
+
 ## Tests
 
 - Tests run against real Postgres
 - Perplexity responses are mocked with `pytest-httpx`
 - Coverage includes city creation/auth, custom slug, and city requests flow
+
+## CircleCI Deploy Flow
+
+- Non-main branches: run `test` job only
+- `main` branch: run `test` -> `build-and-push` -> `deploy-digitalocean`
+
+### Required CircleCI Contexts
+
+`docker_hub` context:
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_PASSWORD` (Docker Hub access token recommended)
+- `DOCKERHUB_REPO` (example: `your-org/groundwork`)
+
+`digitalocean` context:
+- `DIGITALOCEAN_ACCESS_TOKEN`
+- `DIGITALOCEAN_APP_ID`
+
+### Deployment Notes
+
+- CircleCI pushes two tags to Docker Hub on `main`:
+  - `${CIRCLE_SHA1}`
+  - `latest`
+- CircleCI then triggers App Platform deploy using:
+  - `doctl apps create-deployment "$DIGITALOCEAN_APP_ID" --force-rebuild --wait`
+- Runtime app secrets (`DATABASE_URL`, `PERPLEXITY_API_KEY`, `ADMIN_API_KEY`) should be set in DigitalOcean App Platform settings.

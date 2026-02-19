@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Requested Cities | Groundwork{% endblock %}
+
+{% block content %}
+<section>
+    <h1>Requested Cities</h1>
+    <p class="subdued">Public list of submitted city requests.</p>
+
+    {% if city_requests %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Requested Input</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Requested At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in city_requests %}
+                <tr>
+                    <td>{{ item.raw_input }}</td>
+                    <td>{{ item.email or "-" }}</td>
+                    <td>{{ item.status }}</td>
+                    <td>{{ item.requested_at.strftime("%Y-%m-%d %H:%M") if item.requested_at else "-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No city requests submitted yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

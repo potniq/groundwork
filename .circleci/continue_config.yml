@@ -40,7 +40,7 @@ jobs:
       - store_artifacts:
           path: test-results
 
-  build-image:
+  build-and-push:
     docker:
       - image: cimg/base:stable
     steps:
@@ -49,44 +49,42 @@ jobs:
       - run:
           name: Build Docker image
           command: |
-            docker build -t groundwork:${CIRCLE_SHA1} -t groundwork:latest .
-            docker save groundwork:${CIRCLE_SHA1} groundwork:latest -o /tmp/groundwork.tar
-      - persist_to_workspace:
-          root: /tmp
-          paths:
-            - groundwork.tar
-
-  deploy:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - attach_workspace:
-          at: /tmp
-      - setup_remote_docker
+            docker build -t ${DOCKERHUB_REPO}:${CIRCLE_SHA1} -t ${DOCKERHUB_REPO}:latest .
       - run:
-          name: Load image and push to Docker Hub
+          name: Push Docker image to Docker Hub
           command: |
-            docker load -i /tmp/groundwork.tar
             echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            docker tag groundwork:${CIRCLE_SHA1} ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
-            docker tag groundwork:latest ${DOCKERHUB_REPO}:latest
             docker push ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
             docker push ${DOCKERHUB_REPO}:latest
+
+  deploy-digitalocean:
+    docker:
+      - image: digitalocean/doctl:1.146.0
+    steps:
+      - run:
+          name: Trigger DigitalOcean App Platform deployment
+          command: |
+            doctl auth init -t "$DIGITALOCEAN_ACCESS_TOKEN"
+            doctl apps create-deployment "$DIGITALOCEAN_APP_ID" --force-rebuild --wait
 
 workflows:
   ci:
     when: << pipeline.parameters.run_workflow >>
     jobs:
       - test
-      - build-image:
-          requires:
-            - test
-      - deploy:
+      - build-and-push:
           context:
             - docker_hub
-            - production
           requires:
-            - build-image
+            - test
+          filters:
+            branches:
+              only: main
+      - deploy-digitalocean:
+          context:
+            - digitalocean
+          requires:
+            - build-and-push
           filters:
             branches:
               only: main

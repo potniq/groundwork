@@ -102,3 +102,14 @@ def test_request_city(client, db_session):
 def test_request_city_empty_input(client):
     response = client.post("/requests", json={"raw_input": ""})
     assert response.status_code == 422
+
+
+def test_get_requests_page(client):
+    create_response = client.post("/requests", json={"raw_input": "Portland Oregon", "email": "ops@example.com"})
+    assert create_response.status_code == 201
+
+    response = client.get("/requests")
+    assert response.status_code == 200
+    assert "Requested Cities" in response.text
+    assert "Portland Oregon" in response.text
+    assert "ops@example.com" in response.text

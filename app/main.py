@@ -193,6 +193,18 @@ def request_city(payload: CityRequestCreate, db: Session = Depends(get_db)) -> d
     return {"message": "Thanks, we received your city request."}
 
 
+@app.get("/requests", response_class=HTMLResponse)
+def get_requests_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    city_requests = db.scalars(
+        select(CityRequest).order_by(CityRequest.requested_at.desc(), CityRequest.id.desc())
+    ).all()
+    return templates.TemplateResponse(
+        request,
+        "requests.html",
+        {"request": request, "city_requests": city_requests},
+    )
+
+
 @app.get("/{slug}", response_class=HTMLResponse)
 def get_city_page(slug: str, request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     city = db.scalar(select(City).where(City.slug == slug, City.status == "ready"))
