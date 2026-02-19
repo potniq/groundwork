@@ -36,6 +36,7 @@ docker run -p 8000:8000 --env-file .env groundwork
 - PostgreSQL (city intel stored in JSONB)
 - Perplexity Sonar Pro for city transport research
 - Docker for runtime/CI
+- Supabase CLI migrations
 - Python 3.13
 
 ## Data Model
@@ -93,10 +94,18 @@ docker run -p 8000:8000 --env-file .env groundwork
 
 ## Migrations
 
-Apply SQL migrations with:
+Create a new migration:
+
+```bash
+./scripts/new_migration.sh <name>
+# or: supabase migration new <name>
+```
+
+Apply migrations to a database URL:
 
 ```bash
 ./scripts/run_migrations.sh
+# or: supabase db push --db-url "$DATABASE_URL"
 ```
 
 ## Tests

@@ -18,14 +18,19 @@ from app.models import City
 
 @pytest.fixture(scope="session")
 def engine():
-    engine = create_engine(os.environ["DATABASE_URL"], future=True)
-    migration_file = Path(__file__).resolve().parent.parent / "migrations" / "001_init.sql"
+    database_url = os.environ["DATABASE_URL"]
+    engine = create_engine(database_url, future=True)
+    migration_dir = Path(__file__).resolve().parent.parent / "supabase" / "migrations"
+    migration_files = sorted(migration_dir.glob("*.sql"))
+    if not migration_files:
+        raise RuntimeError(f"No migration files found in {migration_dir}")
 
     conn = engine.raw_connection()
     try:
-        conn.autocommit = True
         with conn.cursor() as cur:
-            cur.execute(migration_file.read_text())
+            for migration_file in migration_files:
+                cur.execute(migration_file.read_text())
+        conn.commit()
     finally:
         conn.close()
 

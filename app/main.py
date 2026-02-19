@@ -146,7 +146,7 @@ def health() -> dict[str, str]:
 def get_index(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     cities = db.scalars(select(City).where(City.status == "ready").order_by(City.city_name.asc())).all()
     cards = [build_city_card(city) for city in cities]
-    return templates.TemplateResponse("index.html", {"request": request, "cities": cards})
+    return templates.TemplateResponse(request, "index.html", {"request": request, "cities": cards})
 
 
 @app.get("/cities", response_model=list[CityListItem])
@@ -206,4 +206,4 @@ def get_city_page(slug: str, request: Request, db: Session = Depends(get_db)) ->
         "intel": intel,
         "flag": country_flag(city.country_code),
     }
-    return templates.TemplateResponse("city.html", context)
+    return templates.TemplateResponse(request, "city.html", context)

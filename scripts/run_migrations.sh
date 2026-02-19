@@ -2,7 +2,7 @@
 set -euo pipefail
 
 echo "Running database migrations..."
-for f in migrations/*.sql; do
+for f in supabase/migrations/*.sql; do
     echo "Applying $f..."
     psql "$DATABASE_URL" -f "$f"
 done
