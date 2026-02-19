@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Groundwork | City Transport Intelligence{% endblock %}
+
+{% block content %}
+<section class="intro">
+    <h1>City transport intelligence for business travelers</h1>
+    <p>Search for a city to see transport options, payment methods, operating patterns, and airport connections.</p>
+</section>
+
+<section class="search-panel">
+    <label for="city-search">Search cities</label>
+    <input id="city-search" type="search" placeholder="Type city or country..." autocomplete="off">
+</section>
+
+{% if cities %}
+<section class="card-grid" id="city-grid">
+    {% for city in cities %}
+    <article class="city-card" data-search="{{ (city.city_name ~ ' ' ~ city.country)|lower }}">
+        <h2>
+            <a href="/{{ city.slug }}">{{ city.city_name }}, {{ city.country }}</a>
+            <span class="flag">{{ city.flag }}</span>
+        </h2>
+        <ul class="facts">
+            <li><strong>Metro:</strong> {{ "Yes" if city.has_metro else "No" }}</li>
+            <li><strong>Contactless:</strong> {{ "Yes" if city.contactless else "No" }}</li>
+            <li><strong>Rideshare:</strong> {{ city.rideshare }}</li>
+        </ul>
+        <a class="card-link" href="/{{ city.slug }}">Open guide</a>
+    </article>
+    {% endfor %}
+</section>
+<p id="empty-filter" class="empty-state hidden">No matching cities found.</p>
+{% else %}
+<section class="empty-state">
+    <h2>No cities yet</h2>
+    <p>Use the admin endpoint to generate your first city guide.</p>
+</section>
+{% endif %}
+
+<section class="request-city">
+    <h2>Can't find your city?</h2>
+    <p>Request a city and we'll review it for future coverage.</p>
+    <form id="city-request-form" class="request-form">
+        <label for="request-raw-input">City name</label>
+        <input id="request-raw-input" name="raw_input" type="text" required placeholder="e.g. Joburg or Portland Oregon">
+
+        <label for="request-email">Email (optional)</label>
+        <input id="request-email" name="email" type="email" placeholder="you@company.com">
+
+        <button type="submit">Submit request</button>
+    </form>
+    <p id="request-feedback" class="subdued hidden" role="status" aria-live="polite"></p>
+</section>
+
+<script>
+const searchInput = document.getElementById('city-search');
+const cards = Array.from(document.querySelectorAll('.city-card'));
+const emptyFilter = document.getElementById('empty-filter');
+const requestForm = document.getElementById('city-request-form');
+const requestFeedback = document.getElementById('request-feedback');
+
+if (searchInput) {
+  searchInput.addEventListener('input', (event) => {
+    const query = event.target.value.trim().toLowerCase();
+    let visibleCount = 0;
+
+    cards.forEach((card) => {
+      const searchable = card.dataset.search || '';
+      const matches = searchable.includes(query);
+      card.classList.toggle('hidden', !matches);
+      if (matches) {
+        visibleCount += 1;
+      }
+    });
+
+    if (emptyFilter) {
+      emptyFilter.classList.toggle('hidden', visibleCount > 0 || query.length === 0);
+    }
+  });
+}
+
+if (requestForm) {
+  requestForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(requestForm);
+    const rawInput = String(formData.get('raw_input') || '').trim();
+    const email = String(formData.get('email') || '').trim();
+
+    if (!rawInput) {
+      if (requestFeedback) {
+        requestFeedback.textContent = 'Please enter a city.';
+        requestFeedback.classList.remove('hidden');
+      }
+      return;
+    }
+
+    const payload = { raw_input: rawInput };
+    if (email) {
+      payload.email = email;
+    }
+
+    try {
+      const response = await fetch('/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error('Request failed');
+      }
+
+      const data = await response.json();
+      requestForm.reset();
+      if (requestFeedback) {
+        requestFeedback.textContent = data.message || 'Thanks, we received your city request.';
+        requestFeedback.classList.remove('hidden');
+      }
+    } catch (_) {
+      if (requestFeedback) {
+        requestFeedback.textContent = 'Could not submit request right now. Please try again.';
+        requestFeedback.classList.remove('hidden');
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

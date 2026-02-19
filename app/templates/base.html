@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Groundwork by Potniq{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="site-header">
+    <div class="container header-inner">
+        <a href="/" class="brand">Groundwork by Potniq</a>
+    </div>
+</header>
+
+<main class="container">
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+    <div class="container">
+        Powered by <a href="https://potniq.com" target="_blank" rel="noopener noreferrer">Potniq</a>
+    </div>
+</footer>
+</body>
+</html>

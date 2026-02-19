@@ -1,0 +1,103 @@
+{
+  "authorities": [
+    {
+      "name": "Transports Metropolitans de Barcelona",
+      "website": "https://www.tmb.cat/",
+      "app": "TMB App"
+    },
+    {
+      "name": "Autoritat del Transport Metropolita",
+      "website": "https://www.atm.cat/",
+      "app": null
+    }
+  ],
+  "modes": [
+    {
+      "type": "metro",
+      "operator": "TMB",
+      "notes": "Primary high-frequency urban network with integrated fares."
+    },
+    {
+      "type": "bus",
+      "operator": "TMB",
+      "notes": "Comprehensive bus network including night buses."
+    },
+    {
+      "type": "train",
+      "operator": "Rodalies de Catalunya",
+      "notes": "Regional rail useful for airport and suburban destinations."
+    },
+    {
+      "type": "tram",
+      "operator": "TRAM",
+      "notes": "Serves key corridors outside central core."
+    }
+  ],
+  "payment_methods": [
+    {
+      "method": "T-mobilitat card",
+      "details": "Reloadable integrated transit card valid across metro, bus, tram, and regional rail zones."
+    },
+    {
+      "method": "Contactless bank card",
+      "details": "Accepted for many tickets and top-ups at station machines."
+    },
+    {
+      "method": "Mobile tickets",
+      "details": "Available via operator apps for selected products."
+    }
+  ],
+  "operating_hours": {
+    "weekday": "Metro generally runs 05:00-00:00 Monday-Thursday; extended Friday.",
+    "weekend": "Saturday often runs overnight; Sunday until around midnight.",
+    "night_service": "NitBus covers overnight gaps with key routes."
+  },
+  "rideshare": [
+    {
+      "provider": "Uber",
+      "available": true,
+      "notes": "Available in the metro area, with varying wait times by district."
+    },
+    {
+      "provider": "Cabify",
+      "available": true,
+      "notes": "Strong local presence, often used for business travel."
+    },
+    {
+      "provider": "Free Now",
+      "available": true,
+      "notes": "Taxi-hailing app commonly used in central areas."
+    }
+  ],
+  "airport_connections": [
+    {
+      "mode": "metro",
+      "name": "L9 Sud",
+      "duration": "30-40 min to central interchanges",
+      "cost": "EUR 5.50 airport ticket"
+    },
+    {
+      "mode": "train",
+      "name": "R2 Nord",
+      "duration": "25-35 min to city center stations",
+      "cost": "EUR 4.90 single (zone-dependent products available)"
+    },
+    {
+      "mode": "bus",
+      "name": "Aerobus",
+      "duration": "35-45 min to Placa de Catalunya",
+      "cost": "EUR 6.75 one-way"
+    }
+  ],
+  "delay_info": [
+    {
+      "source": "TMB service status",
+      "url": "https://www.tmb.cat/en/barcelona/journey-planner"
+    },
+    {
+      "source": "Rodalies incidents",
+      "url": "https://rodalies.gencat.cat/en/inici/"
+    }
+  ],
+  "tips": "For 2-5 day business trips, buy a T-casual or suitable T-mobilitat product on arrival, use Aerobus if your hotel is near Placa de Catalunya, and check late-night options in advance as modal coverage changes after midnight."
+}

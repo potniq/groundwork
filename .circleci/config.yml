@@ -1,0 +1,24 @@
+version: 2.1
+setup: true
+
+orbs:
+  path-filtering: circleci/path-filtering@1.1.0
+
+workflows:
+  setup-workflow:
+    jobs:
+      - path-filtering/filter:
+          name: detect-changes
+          base-revision: main
+          config-path: .circleci/continue_config.yml
+          mapping: |
+            README\.md run_workflow false
+            docs/.* run_workflow false
+            .*\.md run_workflow false
+            app/.* run_workflow true
+            tests/.* run_workflow true
+            migrations/.* run_workflow true
+            scripts/.* run_workflow true
+            Dockerfile run_workflow true
+            requirements\.txt run_workflow true
+            \.circleci/.* run_workflow true

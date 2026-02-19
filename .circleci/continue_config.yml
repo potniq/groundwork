@@ -1,0 +1,92 @@
+version: 2.1
+
+parameters:
+  run_workflow:
+    type: boolean
+    default: true
+
+jobs:
+  test:
+    docker:
+      - image: cimg/python:3.13
+        environment:
+          DATABASE_URL: postgresql://postgres@localhost:5432/groundwork_test
+          ADMIN_API_KEY: test-key
+          PERPLEXITY_API_KEY: test-key
+      - image: cimg/postgres:18.0
+        environment:
+          POSTGRES_DB: groundwork_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ""
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+      - run:
+          name: Run migrations
+          command: |
+            chmod +x scripts/run_migrations.sh
+            ./scripts/run_migrations.sh
+      - run:
+          name: Run tests
+          command: |
+            mkdir -p test-results
+            pytest tests/ --junitxml=test-results/results.xml
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+
+  build-image:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build Docker image
+          command: |
+            docker build -t groundwork:${CIRCLE_SHA1} -t groundwork:latest .
+            docker save groundwork:${CIRCLE_SHA1} groundwork:latest -o /tmp/groundwork.tar
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - groundwork.tar
+
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - setup_remote_docker
+      - run:
+          name: Load image and push to Docker Hub
+          command: |
+            docker load -i /tmp/groundwork.tar
+            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            docker tag groundwork:${CIRCLE_SHA1} ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
+            docker tag groundwork:latest ${DOCKERHUB_REPO}:latest
+            docker push ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
+            docker push ${DOCKERHUB_REPO}:latest
+
+workflows:
+  ci:
+    when: << pipeline.parameters.run_workflow >>
+    jobs:
+      - test
+      - build-image:
+          requires:
+            - test
+      - deploy:
+          context:
+            - docker_hub
+            - production
+          requires:
+            - build-image
+          filters:
+            branches:
+              only: main

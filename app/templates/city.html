@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}{{ city.city_name }} Transport Guide | Groundwork{% endblock %}
+
+{% block content %}
+<section class="city-header">
+    <h1>{{ city.city_name }}, {{ city.country }} <span class="flag">{{ flag }}</span></h1>
+    <p class="subdued">Status: {{ city.status }}</p>
+</section>
+
+{% if intel %}
+<section>
+    <h2>Transport Authorities</h2>
+    <ul>
+        {% for authority in intel.authorities %}
+        <li>
+            <strong>{{ authority.name }}</strong>
+            <a href="{{ authority.website }}" target="_blank" rel="noopener noreferrer">Website</a>
+            {% if authority.app %}<span class="subdued">App: {{ authority.app }}</span>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+
+<section>
+    <h2>Getting Around</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Mode</th>
+                    <th>Operator</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mode in intel.modes %}
+                <tr>
+                    <td>{{ mode.type }}</td>
+                    <td>{{ mode.operator }}</td>
+                    <td>{{ mode.notes }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section>
+    <h2>Paying for Transport</h2>
+    <ul>
+        {% for payment in intel.payment_methods %}
+        <li><strong>{{ payment.method }}:</strong> {{ payment.details }}</li>
+        {% endfor %}
+    </ul>
+</section>
+
+<section>
+    <h2>Operating Hours</h2>
+    <ul>
+        <li><strong>Weekday:</strong> {{ intel.operating_hours.weekday }}</li>
+        <li><strong>Weekend:</strong> {{ intel.operating_hours.weekend }}</li>
+        {% if intel.operating_hours.night_service %}
+        <li><strong>Night service:</strong> {{ intel.operating_hours.night_service }}</li>
+        {% endif %}
+    </ul>
+</section>
+
+<section>
+    <h2>Rideshare &amp; Taxis</h2>
+    <ul>
+        {% for option in intel.rideshare %}
+        <li>
+            <strong>{{ option.provider }}</strong>
+            <span class="badge {{ 'yes' if option.available else 'no' }}">{{ 'Available' if option.available else 'Not available' }}</span>
+            <span>{{ option.notes }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+
+<section>
+    <h2>Airport Connections</h2>
+    <ul>
+        {% for connection in intel.airport_connections %}
+        <li><strong>{{ connection.mode }} - {{ connection.name }}:</strong> {{ connection.duration }}, {{ connection.cost }}</li>
+        {% endfor %}
+    </ul>
+</section>
+
+<section>
+    <h2>Live Delay Info</h2>
+    <ul>
+        {% for source in intel.delay_info %}
+        <li><a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.source }}</a></li>
+        {% endfor %}
+    </ul>
+</section>
+
+<section>
+    <h2>Local Tips</h2>
+    <p class="tip-box">{{ intel.tips }}</p>
+</section>
+{% else %}
+<section class="empty-state">
+    <h2>Guide not ready</h2>
+    <p>This city is still being generated.</p>
+</section>
+{% endif %}
+{% endblock %}
