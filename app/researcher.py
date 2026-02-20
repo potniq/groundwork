@@ -81,7 +81,7 @@ def _system_prompt() -> str:
         "Research city transport and return only valid JSON that matches this schema exactly:\n"
         "{"
         '"authorities":[{"name":"string","website":"string","app":"string|null"}],' 
-        '"modes":[{"type":"metro|bus|tram|train|ferry|monorail|cable_car|funicular|brt|other","operator":"string","notes":"string"}],' 
+        '"modes":[{"type":"metro|light_rail|bus|tram|train|ferry|monorail|cable_car|funicular|brt|other","operator":"string","notes":"string"}],' 
         '"payment_methods":[{"method":"string","details":"string"}],' 
         '"operating_hours":{"weekday":"string","weekend":"string","night_service":"string|null"},' 
         '"rideshare":[{"provider":"string","available":true,"notes":"string"}],' 
