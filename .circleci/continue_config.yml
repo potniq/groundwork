@@ -251,7 +251,7 @@ workflows:
             - install-deps
       - scan-python-deps:
           context:
-            - groundwork_snyk
+            - snyk
           requires:
             - install-deps
       - build-docker:
