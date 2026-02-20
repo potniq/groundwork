@@ -167,7 +167,7 @@ Generate a starter set of 30 cities sequentially:
   - `${CIRCLE_SHA1}`
   - `latest`
 - CircleCI runs production SQL migrations before deploy using:
-  - `supabase db push --db-url "$SUPABASE_DB_URL" --include-all`
+  - `npx supabase@latest db push --db-url "$SUPABASE_DB_URL" --include-all`
 - CircleCI then triggers App Platform deploy using:
   - `doctl apps create-deployment "$DIGITALOCEAN_APP_ID" --force-rebuild --wait`
 - Runtime app secrets (`DATABASE_URL`, `PERPLEXITY_API_KEY`, `ADMIN_API_KEY`) should be set in DigitalOcean App Platform settings.
