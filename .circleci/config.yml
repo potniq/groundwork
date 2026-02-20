@@ -16,6 +16,7 @@ workflows:
             docs/.* run_workflow false
             .*\.md run_workflow false
             app/.* run_workflow true
+            supabase/.* run_workflow true
             tests/.* run_workflow true
             migrations/.* run_workflow true
             scripts/.* run_workflow true

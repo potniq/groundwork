@@ -57,6 +57,25 @@ jobs:
             docker push ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
             docker push ${DOCKERHUB_REPO}:latest
 
+  run-production-migrations:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: Install Supabase CLI
+          command: |
+            mkdir -p "$HOME/bin"
+            curl -fsSL "https://github.com/supabase/cli/releases/download/v2.67.1/supabase_2.67.1_linux_amd64.tar.gz" -o /tmp/supabase.tar.gz
+            tar -xzf /tmp/supabase.tar.gz -C "$HOME/bin" supabase
+            echo 'export PATH="$HOME/bin:$PATH"' >> "$BASH_ENV"
+      - run:
+          name: Run Supabase production migrations
+          command: |
+            source "$BASH_ENV"
+            supabase --version
+            supabase db push --db-url "$SUPABASE_DB_URL" --include-all
+
   deploy-digitalocean:
     docker:
       - image: digitalocean/doctl:1.146.0
@@ -74,17 +93,25 @@ workflows:
       - test
       - build-and-push:
           context:
-            - docker_hub
+            - groundwork_docker
           requires:
             - test
           filters:
             branches:
               only: main
-      - deploy-digitalocean:
+      - run-production-migrations:
           context:
-            - digitalocean
+            - groundwork_supabase
           requires:
             - build-and-push
+          filters:
+            branches:
+              only: main
+      - deploy-digitalocean:
+          context:
+            - groundwork_digitalocean
+          requires:
+            - run-production-migrations
           filters:
             branches:
               only: main
