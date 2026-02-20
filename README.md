@@ -142,16 +142,19 @@ Generate a starter set of 30 cities sequentially:
 ## CircleCI Deploy Flow
 
 - Non-main branches: run `test` job only
-- `main` branch: run `test` -> `build-and-push` -> `deploy-digitalocean`
+- `main` branch: run `test` -> `build-and-push` -> `run-production-migrations` -> `deploy-digitalocean`
 
 ### Required CircleCI Contexts
 
-`docker_hub` context:
+`groundwork_docker` context:
 - `DOCKERHUB_USERNAME`
 - `DOCKERHUB_PASSWORD` (Docker Hub access token recommended)
 - `DOCKERHUB_REPO` (example: `your-org/groundwork`)
 
-`digitalocean` context:
+`groundwork_supabase` context:
+- `SUPABASE_DB_URL` (direct Postgres connection string for production, percent-encoded if needed)
+
+`groundwork_digitalocean` context:
 - `DIGITALOCEAN_ACCESS_TOKEN`
 - `DIGITALOCEAN_APP_ID`
 
@@ -160,6 +163,8 @@ Generate a starter set of 30 cities sequentially:
 - CircleCI pushes two tags to Docker Hub on `main`:
   - `${CIRCLE_SHA1}`
   - `latest`
+- CircleCI runs production SQL migrations before deploy using:
+  - `supabase db push --db-url "$SUPABASE_DB_URL" --include-all`
 - CircleCI then triggers App Platform deploy using:
   - `doctl apps create-deployment "$DIGITALOCEAN_APP_ID" --force-rebuild --wait`
 - Runtime app secrets (`DATABASE_URL`, `PERPLEXITY_API_KEY`, `ADMIN_API_KEY`) should be set in DigitalOcean App Platform settings.
