@@ -18,8 +18,8 @@ workflows:
             app/.* run_workflow true
             supabase/.* run_workflow true
             tests/.* run_workflow true
-            migrations/.* run_workflow true
             scripts/.* run_workflow true
+            pytest\.ini run_workflow true
             Dockerfile run_workflow true
             requirements\.txt run_workflow true
             \.circleci/.* run_workflow true

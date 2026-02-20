@@ -1,6 +1,9 @@
+import pytest
 from sqlalchemy import select
 
-from app.models import CityRequest
+from app.models import City, CityRequest
+
+pytestmark = pytest.mark.integration
 
 
 def _city_payload() -> dict:
@@ -76,6 +79,55 @@ def test_create_city_custom_slug(client, mock_perplexity_response):
 def test_create_city_duplicate(client, sample_city):
     response = client.post("/cities", headers={"X-API-Key": "test-key"}, json=_city_payload())
     assert response.status_code == 409
+
+
+def test_create_city_retries_failed_slug(client, db_session, mock_perplexity_response):
+    failed_city = City(
+        slug="barcelona-es",
+        city_name="Barcelona",
+        country="Spain",
+        country_code="ES",
+        latitude=41.3874,
+        longitude=2.1686,
+        status="failed",
+        intel=None,
+        raw_response=None,
+    )
+    db_session.add(failed_city)
+    db_session.commit()
+    db_session.refresh(failed_city)
+
+    response = client.post("/cities", headers={"X-API-Key": "test-key"}, json=_city_payload())
+    assert response.status_code == 201
+
+    data = response.json()
+    assert data["slug"] == "barcelona-es"
+    assert data["status"] == "ready"
+    assert data["intel"] is not None
+
+    stored = db_session.scalar(select(City).where(City.slug == "barcelona-es"))
+    assert stored is not None
+    assert stored.id == failed_city.id
+    assert stored.status == "ready"
+    assert stored.intel is not None
+
+
+def test_create_city_perplexity_400_details(client, httpx_mock):
+    httpx_mock.add_response(
+        method="POST",
+        url="https://api.perplexity.ai/chat/completions",
+        status_code=400,
+        json={"error": {"message": "Malformed request payload"}},
+        headers={"x-request-id": "req_test_400"},
+    )
+
+    response = client.post("/cities", headers={"X-API-Key": "test-key"}, json=_city_payload())
+    assert response.status_code == 502
+
+    detail = response.json()["detail"]
+    assert "Perplexity API error 400" in detail
+    assert "req_test_400" in detail
+    assert "Malformed request payload" in detail
 
 
 def test_create_city_no_auth(client):

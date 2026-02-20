@@ -46,6 +46,7 @@ class Authority(BaseModel):
 class TransportMode(BaseModel):
     type: Literal[
         "metro",
+        "light_rail",
         "bus",
         "tram",
         "train",

@@ -135,14 +135,17 @@ Generate a starter set of 30 cities sequentially:
 
 ## Tests
 
-- Tests run against real Postgres
+- Unit tests (no DB):
+  - `pytest -m unit tests/unit`
+- Integration tests (Postgres-backed):
+  - `pytest -m integration tests/integration`
 - Perplexity responses are mocked with `pytest-httpx`
-- Coverage includes city creation/auth, custom slug, and city requests flow
+- Coverage includes city creation/auth, custom slug, city requests flow, and unit helpers
 
 ## CircleCI Deploy Flow
 
-- Non-main branches: run `test` job only
-- `main` branch: run `test` -> `build-and-push` -> `run-production-migrations` -> `deploy-digitalocean`
+- Non-main branches: run `test-unit` and `test-integration`
+- `main` branch: run `test-unit` + `test-integration` -> `build-and-push` -> `run-production-migrations` -> `deploy-digitalocean`
 
 ### Required CircleCI Contexts
 
@@ -164,7 +167,7 @@ Generate a starter set of 30 cities sequentially:
   - `${CIRCLE_SHA1}`
   - `latest`
 - CircleCI runs production SQL migrations before deploy using:
-  - `supabase db push --db-url "$SUPABASE_DB_URL" --include-all`
+  - `npx supabase@latest db push --db-url "$SUPABASE_DB_URL" --include-all`
 - CircleCI then triggers App Platform deploy using:
   - `doctl apps create-deployment "$DIGITALOCEAN_APP_ID" --force-rebuild --wait`
 - Runtime app secrets (`DATABASE_URL`, `PERPLEXITY_API_KEY`, `ADMIN_API_KEY`) should be set in DigitalOcean App Platform settings.
