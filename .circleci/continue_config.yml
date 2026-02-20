@@ -248,10 +248,27 @@ jobs:
           name: Authenticate with DigitalOcean
           command: |
             doctl auth init --access-token "$DIGITALOCEAN_ACCESS_TOKEN"
+      
+      - run:
+          name: Plan a deploy
+          command: |
+            circleci run release plan \
+              --environment-name="prod" \
+              --component-name="groundwork-app" \
+              --target-version="${CIRCLE_SHA1}"
       - run:
           name: Trigger DigitalOcean App Platform deployment
           command: |
             doctl apps create-deployment "$DIGITALOCEAN_APP_ID" --wait
+      - run:
+          name: Update a deploy to SUCCESS
+          command: circleci run release update --status=SUCCESS 
+          when: on_success 
+      - run:
+          name: Update planned deploy to FAILED
+          command: circleci run release update --status=FAILED 
+          when: on_fail
+      
 
 workflows:
   ci:
