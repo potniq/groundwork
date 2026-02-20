@@ -7,6 +7,7 @@ parameters:
 
 orbs:
   python: circleci/python@4.0.0
+  snyk: snyk/snyk@2.3.0
 
 jobs:
   install-deps:
@@ -95,17 +96,10 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run:
-          name: Install Snyk CLI
-          command: |
-            curl -fsSL --compressed https://downloads.snyk.io/cli/stable/snyk-linux -o /tmp/snyk
-            chmod +x /tmp/snyk
-            sudo mv /tmp/snyk /usr/local/bin/snyk
-      - run:
-          name: Scan Python dependencies with Snyk
-          command: |
-            snyk auth "$SNYK_TOKEN"
-            snyk test --file=requirements.txt --severity-threshold=high
+      - snyk/scan:
+          target-file: requirements.txt
+          severity-threshold: high
+          monitor-on-build: false
 
   build-docker:
     docker:
@@ -208,17 +202,10 @@ jobs:
           name: Load Docker image from workspace
           command: |
             docker load -i /tmp/groundwork-api.tar
-      - run:
-          name: Install Snyk CLI
-          command: |
-            curl -fsSL --compressed https://downloads.snyk.io/cli/stable/snyk-linux -o /tmp/snyk
-            chmod +x /tmp/snyk
-            sudo mv /tmp/snyk /usr/local/bin/snyk
-      - run:
-          name: Scan built Docker image with Snyk
-          command: |
-            snyk auth "$SNYK_TOKEN"
-            snyk container test ${DOCKERHUB_REPO}:latest --severity-threshold=high
+      - snyk/scan:
+          docker-image-name: ${DOCKERHUB_REPO}:latest
+          severity-threshold: high
+          monitor-on-build: false
 
   run-production-migrations:
     docker:
