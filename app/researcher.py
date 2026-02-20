@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 
 import httpx
@@ -7,6 +8,7 @@ from app.config import get_settings
 from app.models import CityIntel
 
 PERPLEXITY_URL = "https://api.perplexity.ai/chat/completions"
+logger = logging.getLogger(__name__)
 
 
 def _extract_json_text(content: str) -> str:
@@ -29,8 +31,28 @@ def _call_perplexity(messages: list[dict[str, str]]) -> str:
     }
 
     with httpx.Client(timeout=60) as client:
-        response = client.post(PERPLEXITY_URL, headers=headers, json=payload)
-        response.raise_for_status()
+        try:
+            response = client.post(PERPLEXITY_URL, headers=headers, json=payload)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            status_code = exc.response.status_code
+            request_id = exc.response.headers.get("x-request-id") or exc.response.headers.get("request-id")
+            body = (exc.response.text or "").strip()
+            if len(body) > 1000:
+                body = f"{body[:1000]}...[truncated]"
+
+            message = f"Perplexity API error {status_code}"
+            if request_id:
+                message = f"{message} (request_id={request_id})"
+            if body:
+                message = f"{message}: {body}"
+
+            logger.error(message)
+            raise RuntimeError(message) from exc
+        except httpx.HTTPError as exc:
+            message = f"Perplexity request failed: {exc}"
+            logger.exception(message)
+            raise RuntimeError(message) from exc
 
     data = response.json()
     choices = data.get("choices") or []
@@ -100,6 +122,7 @@ def generate_intel(city_name: str, country: str) -> CityIntel:
         except Exception as exc:  # noqa: BLE001
             last_error = exc
             if attempt == 0:
+                messages.append({"role": "assistant", "content": raw_content})
                 messages.append(
                     {
                         "role": "user",

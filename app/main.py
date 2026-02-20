@@ -102,20 +102,34 @@ def create_city_profile(db: Session, payload: CreateCityRequest) -> City:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Slug cannot be empty")
 
     existing = db.scalar(select(City).where(City.slug == slug))
-    if existing:
+    if existing and existing.status != "failed":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="City already exists")
 
-    city = City(
-        slug=slug,
-        city_name=payload.city_name,
-        country=payload.country,
-        country_code=payload.country_code.upper(),
-        latitude=payload.latitude,
-        longitude=payload.longitude,
-        metro_area_name=None,
-        status="generating",
-    )
-    db.add(city)
+    if existing and existing.status == "failed":
+        city = existing
+        city.city_name = payload.city_name
+        city.country = payload.country
+        city.country_code = payload.country_code.upper()
+        city.latitude = payload.latitude
+        city.longitude = payload.longitude
+        city.metro_area_name = None
+        city.status = "generating"
+        city.intel = None
+        city.raw_response = None
+        city.stale_after = None
+    else:
+        city = City(
+            slug=slug,
+            city_name=payload.city_name,
+            country=payload.country,
+            country_code=payload.country_code.upper(),
+            latitude=payload.latitude,
+            longitude=payload.longitude,
+            metro_area_name=None,
+            status="generating",
+        )
+        db.add(city)
+
     db.commit()
     db.refresh(city)
 
