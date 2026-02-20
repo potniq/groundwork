@@ -60,22 +60,94 @@ jobs:
       - store_artifacts:
           path: test-results
 
-  build-and-push:
+  build-docker:
     docker:
       - image: cimg/base:stable
     steps:
       - checkout
-      - setup_remote_docker
+      - setup_remote_docker:
+          docker_layer_caching: false
       - run:
           name: Build Docker image
           command: |
-            docker build -t ${DOCKERHUB_REPO}:${CIRCLE_SHA1} -t ${DOCKERHUB_REPO}:latest .
+            docker build \
+              -t ${DOCKERHUB_REPO}:latest \
+              -t ${DOCKERHUB_REPO}:${CIRCLE_SHA1} \
+              .
+      - run:
+          name: Save Docker image to workspace
+          command: |
+            docker save -o /tmp/groundwork-api.tar ${DOCKERHUB_REPO}:latest ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - groundwork-api.tar
+
+  push-docker:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Load Docker image from workspace
+          command: |
+            docker load -i /tmp/groundwork-api.tar
       - run:
           name: Push Docker image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            docker push ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
             docker push ${DOCKERHUB_REPO}:latest
+            docker push ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
+
+  verify-docker:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Load Docker image from workspace
+          command: |
+            docker load -i /tmp/groundwork-api.tar
+      - run:
+          name: Start container and verify health endpoint
+          command: |
+            echo "Starting container for runtime verification..."
+
+            docker run -d --name groundwork-test \
+              -e PORT=8080 \
+              -e DATABASE_URL=sqlite:///tmp/groundwork.db \
+              -e PERPLEXITY_API_KEY=test_key \
+              -e ADMIN_API_KEY=test_key \
+              ${DOCKERHUB_REPO}:latest
+
+            for i in $(seq 1 30); do
+              if ! docker ps -q --filter "name=groundwork-test" | grep -q .; then
+                echo "Container exited before becoming healthy."
+                docker logs groundwork-test || true
+                exit 1
+              fi
+
+              if docker exec groundwork-test python -c 'import urllib.request,sys;resp=urllib.request.urlopen("http://127.0.0.1:8080/health", timeout=2);sys.exit(0 if resp.status==200 else 1)' >/dev/null 2>&1; then
+                echo "Health endpoint returned HTTP 200 after ${i}s."
+                docker logs groundwork-test | tail -n 50 || true
+                docker stop groundwork-test >/dev/null 2>&1 || true
+                exit 0
+              fi
+
+              echo "Waiting for app startup... ($i/30)"
+              sleep 1
+            done
+
+            echo "Health check did not pass within timeout."
+            docker logs groundwork-test || true
+            docker stop groundwork-test >/dev/null 2>&1 || true
+            exit 1
 
   run-production-migrations:
     docker:
@@ -90,13 +162,23 @@ jobs:
 
   deploy-digitalocean:
     docker:
-      - image: digitalocean/doctl:1.146.0
+      - image: cimg/base:stable
     steps:
+      - run:
+          name: Install doctl
+          command: |
+            cd ~
+            wget https://github.com/digitalocean/doctl/releases/download/v1.146.0/doctl-1.146.0-linux-amd64.tar.gz
+            tar xf doctl-1.146.0-linux-amd64.tar.gz
+            sudo mv doctl /usr/local/bin
+      - run:
+          name: Authenticate with DigitalOcean
+          command: |
+            doctl auth init --access-token "$DIGITALOCEAN_ACCESS_TOKEN"
       - run:
           name: Trigger DigitalOcean App Platform deployment
           command: |
-            doctl auth init -t "$DIGITALOCEAN_ACCESS_TOKEN"
-            doctl apps create-deployment "$DIGITALOCEAN_APP_ID" --force-rebuild --wait
+            doctl apps create-deployment "$DIGITALOCEAN_APP_ID" --wait
 
 workflows:
   ci:
@@ -104,7 +186,7 @@ workflows:
     jobs:
       - test-unit
       - test-integration
-      - build-and-push:
+      - build-docker:
           context:
             - groundwork_docker
           requires:
@@ -117,7 +199,23 @@ workflows:
           context:
             - groundwork_supabase
           requires:
-            - build-and-push
+            - verify-docker
+          filters:
+            branches:
+              only: main
+      - verify-docker:
+          context:
+            - groundwork_docker
+          requires:
+            - build-docker
+          filters:
+            branches:
+              only: main
+      - push-docker:
+          context:
+            - groundwork_docker
+          requires:
+            - run-production-migrations
           filters:
             branches:
               only: main
@@ -125,7 +223,7 @@ workflows:
           context:
             - groundwork_digitalocean
           requires:
-            - run-production-migrations
+            - push-docker
           filters:
             branches:
               only: main
