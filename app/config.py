@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str
     PERPLEXITY_API_KEY: str
+    PERPLEXITY_MOCK_RESPONSE_FILE: str | None = None
     ADMIN_API_KEY: str
 
 

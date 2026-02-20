@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from pathlib import Path
 
 import httpx
 
@@ -99,7 +100,24 @@ def _system_prompt() -> str:
     )
 
 
+def _load_mock_intel() -> CityIntel | None:
+    settings = get_settings()
+    mock_response_file = settings.PERPLEXITY_MOCK_RESPONSE_FILE
+    if not mock_response_file:
+        return None
+
+    try:
+        payload = json.loads(Path(mock_response_file).read_text(encoding="utf-8"))
+        return CityIntel.model_validate(payload)
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError(f"Invalid PERPLEXITY_MOCK_RESPONSE_FILE at {mock_response_file}: {exc}") from exc
+
+
 def generate_intel(city_name: str, country: str) -> CityIntel:
+    mock_intel = _load_mock_intel()
+    if mock_intel is not None:
+        return mock_intel
+
     messages: list[dict[str, str]] = [
         {"role": "system", "content": _system_prompt()},
         {
