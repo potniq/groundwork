@@ -5,20 +5,50 @@ parameters:
     type: boolean
     default: true
 
+orbs:
+  python: circleci/python@4.0.0
+  snyk: snyk/snyk@2.3.0
+
 jobs:
+  install-deps:
+    docker:
+      - image: cimg/python:3.13
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v2-python-venv-{{ arch }}-{{ checksum "requirements.txt" }}
+      - run:
+          name: Create virtualenv
+          command: |
+            if [ ! -d .venv ]; then
+              python -m venv .venv
+            fi
+            echo 'source "$(pwd)/.venv/bin/activate"' >> "$BASH_ENV"
+      - python/install-packages:
+          pkg-manager: pip
+          pip-dependency-file: requirements.txt
+          cache-version: v2
+      - save_cache:
+          key: v2-python-venv-{{ arch }}-{{ checksum "requirements.txt" }}
+          paths:
+            - .venv
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .venv
+
   test-unit:
     docker:
       - image: cimg/python:3.13
     steps:
       - checkout
-      - run:
-          name: Install dependencies
-          command: |
-            python -m pip install --upgrade pip
-            pip install -r requirements.txt
+      - attach_workspace:
+          at: .
       - run:
           name: Run unit tests
           command: |
+            source .venv/bin/activate
             mkdir -p test-results
             pytest -m unit tests/unit --junitxml=test-results/unit-results.xml
       - store_test_results:
@@ -40,25 +70,36 @@ jobs:
           POSTGRES_PASSWORD: ""
     steps:
       - checkout
-      - run:
-          name: Install dependencies
-          command: |
-            python -m pip install --upgrade pip
-            pip install -r requirements.txt
+      - attach_workspace:
+          at: .
       - run:
           name: Run migrations
           command: |
+            source .venv/bin/activate
             chmod +x scripts/run_migrations.sh
             ./scripts/run_migrations.sh
       - run:
           name: Run integration tests
           command: |
+            source .venv/bin/activate
             mkdir -p test-results
             pytest -m integration tests/integration --junitxml=test-results/integration-results.xml
       - store_test_results:
           path: test-results
       - store_artifacts:
           path: test-results
+
+  scan-python-deps:
+    docker:
+      - image: cimg/python:3.13
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - snyk/scan:
+          target-file: requirements.txt
+          severity-threshold: high
+          monitor-on-build: false
 
   build-docker:
     docker:
@@ -149,6 +190,23 @@ jobs:
             docker stop groundwork-test >/dev/null 2>&1 || true
             exit 1
 
+  scan-docker-image:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Load Docker image from workspace
+          command: |
+            docker load -i /tmp/groundwork-api.tar
+      - snyk/scan:
+          docker-image-name: ${DOCKERHUB_REPO}:latest
+          severity-threshold: high
+          monitor-on-build: false
+
   run-production-migrations:
     docker:
       - image: cimg/node:20.19
@@ -184,22 +242,34 @@ workflows:
   ci:
     when: << pipeline.parameters.run_workflow >>
     jobs:
-      - test-unit
-      - test-integration
+      - install-deps
+      - test-unit:
+          requires:
+            - install-deps
+      - test-integration:
+          requires:
+            - install-deps
+      - scan-python-deps:
+          context:
+            - groundwork_snyk
+          requires:
+            - install-deps
       - build-docker:
           context:
             - groundwork_docker
           requires:
             - test-unit
             - test-integration
+            - scan-python-deps
           filters:
             branches:
               only: main
-      - run-production-migrations:
+      - scan-docker-image:
           context:
-            - groundwork_supabase
+            - groundwork_docker
+            - groundwork_snyk
           requires:
-            - verify-docker
+            - build-docker
           filters:
             branches:
               only: main
@@ -208,6 +278,15 @@ workflows:
             - groundwork_docker
           requires:
             - build-docker
+          filters:
+            branches:
+              only: main
+      - run-production-migrations:
+          context:
+            - groundwork_supabase
+          requires:
+            - verify-docker
+            - scan-docker-image
           filters:
             branches:
               only: main
