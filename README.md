@@ -161,7 +161,7 @@ Generate a starter set of 30 cities sequentially:
 - `DIGITALOCEAN_ACCESS_TOKEN`
 - `DIGITALOCEAN_APP_ID`
 
-`groundwork_snyk` context:
+`snyk` context:
 - `SNYK_TOKEN`
 
 ### Deployment Notes
@@ -169,7 +169,7 @@ Generate a starter set of 30 cities sequentially:
 - CircleCI pushes two tags to Docker Hub on `main`:
   - `${CIRCLE_SHA1}`
   - `latest`
-- Python dependencies are installed in a dedicated `install-deps` job, cached, and persisted to workspace as `.venv` for downstream test/scan jobs.
+- Python dependencies are installed in a dedicated `install-deps` job, cached, and persisted to workspace as `/home/circleci/.local` for downstream test/scan jobs.
 - CircleCI runs Snyk dependency scanning against `requirements.txt` before Docker build.
 - Docker image build and push are split into separate jobs (image is saved/loaded via workspace) to keep deploy sequencing explicit and more reliable.
 - CircleCI verifies the built image by starting a container with test env vars and polling `GET /health` until it returns HTTP 200.

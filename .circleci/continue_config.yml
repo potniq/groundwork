@@ -17,26 +17,26 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v2-python-venv-{{ arch }}-{{ checksum "requirements.txt" }}
+            - v3-python-user-local-{{ arch }}-{{ checksum "requirements.txt" }}
       - run:
-          name: Create virtualenv
+          name: Configure user-site Python path
           command: |
-            if [ ! -d .venv ]; then
-              python -m venv .venv
-            fi
-            echo 'source "$(pwd)/.venv/bin/activate"' >> "$BASH_ENV"
+            echo 'export PIP_USER=1' >> "$BASH_ENV"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
       - python/install-packages:
           pkg-manager: pip
           pip-dependency-file: requirements.txt
-          cache-version: v2
+          cache-version: v3
       - save_cache:
-          key: v2-python-venv-{{ arch }}-{{ checksum "requirements.txt" }}
+          key: v3-python-user-local-{{ arch }}-{{ checksum "requirements.txt" }}
           paths:
-            - .venv
+            - /home/circleci/.local
+            - /home/circleci/.cache/pip
       - persist_to_workspace:
-          root: .
+          root: /home/circleci
           paths:
-            - .venv
+            - .local
 
   test-unit:
     docker:
@@ -44,13 +44,17 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: .
+          at: /home/circleci
+      - run:
+          name: Configure user-site Python path
+          command: |
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
       - run:
           name: Run unit tests
           command: |
-            source .venv/bin/activate
             mkdir -p test-results
-            pytest -m unit tests/unit --junitxml=test-results/unit-results.xml
+            python -m pytest -m unit tests/unit --junitxml=test-results/unit-results.xml
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -71,19 +75,22 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: .
+          at: /home/circleci
+      - run:
+          name: Configure user-site Python path
+          command: |
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
       - run:
           name: Run migrations
           command: |
-            source .venv/bin/activate
             chmod +x scripts/run_migrations.sh
             ./scripts/run_migrations.sh
       - run:
           name: Run integration tests
           command: |
-            source .venv/bin/activate
             mkdir -p test-results
-            pytest -m integration tests/integration --junitxml=test-results/integration-results.xml
+            python -m pytest -m integration tests/integration --junitxml=test-results/integration-results.xml
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -95,14 +102,15 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: .
+          at: /home/circleci
       - run:
-          name: Activate virtualenv for Snyk
+          name: Configure user-site Python path for Snyk
           command: |
-            echo 'source "$(pwd)/.venv/bin/activate"' >> "$BASH_ENV"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
             source "$BASH_ENV"
             python --version
             pip --version
+            pip show fastapi
       - snyk/scan:
           target-file: requirements.txt
           severity-threshold: high
@@ -274,7 +282,7 @@ workflows:
       - scan-docker-image:
           context:
             - groundwork_docker
-            - groundwork_snyk
+            - snyk
           requires:
             - build-docker
           filters:
