@@ -96,6 +96,13 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - run:
+          name: Activate virtualenv for Snyk
+          command: |
+            echo 'source "$(pwd)/.venv/bin/activate"' >> "$BASH_ENV"
+            source "$BASH_ENV"
+            python --version
+            pip --version
       - snyk/scan:
           target-file: requirements.txt
           severity-threshold: high
