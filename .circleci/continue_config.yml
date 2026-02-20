@@ -5,22 +5,56 @@ parameters:
     type: boolean
     default: true
 
+orbs:
+  python: circleci/python@4.0.0
+  snyk: snyk/snyk@2.3.0
+
 jobs:
+  install-deps:
+    docker:
+      - image: cimg/python:3.13
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v3-python-user-local-{{ arch }}-{{ checksum "requirements.txt" }}
+      - run:
+          name: Configure user-site Python path
+          command: |
+            echo 'export PIP_USER=1' >> "$BASH_ENV"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
+      - python/install-packages:
+          pkg-manager: pip
+          pip-dependency-file: requirements.txt
+          cache-version: v3
+      - save_cache:
+          key: v3-python-user-local-{{ arch }}-{{ checksum "requirements.txt" }}
+          paths:
+            - /home/circleci/.local
+            - /home/circleci/.cache/pip
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - .local
+
   test-unit:
     docker:
       - image: cimg/python:3.13
     steps:
       - checkout
+      - attach_workspace:
+          at: /home/circleci
       - run:
-          name: Install dependencies
+          name: Configure user-site Python path
           command: |
-            python -m pip install --upgrade pip
-            pip install -r requirements.txt
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
       - run:
           name: Run unit tests
           command: |
             mkdir -p test-results
-            pytest -m unit tests/unit --junitxml=test-results/unit-results.xml
+            python -m pytest -m unit tests/unit --junitxml=test-results/unit-results.xml
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -40,11 +74,13 @@ jobs:
           POSTGRES_PASSWORD: ""
     steps:
       - checkout
+      - attach_workspace:
+          at: /home/circleci
       - run:
-          name: Install dependencies
+          name: Configure user-site Python path
           command: |
-            python -m pip install --upgrade pip
-            pip install -r requirements.txt
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
       - run:
           name: Run migrations
           command: |
@@ -54,11 +90,31 @@ jobs:
           name: Run integration tests
           command: |
             mkdir -p test-results
-            pytest -m integration tests/integration --junitxml=test-results/integration-results.xml
+            python -m pytest -m integration tests/integration --junitxml=test-results/integration-results.xml
       - store_test_results:
           path: test-results
       - store_artifacts:
           path: test-results
+
+  scan-python-deps:
+    docker:
+      - image: cimg/python:3.13
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /home/circleci
+      - run:
+          name: Configure user-site Python path for Snyk
+          command: |
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
+            python --version
+            pip --version
+            pip show fastapi
+      - snyk/scan:
+          target-file: requirements.txt
+          severity-threshold: high
+          monitor-on-build: false
 
   build-docker:
     docker:
@@ -149,6 +205,23 @@ jobs:
             docker stop groundwork-test >/dev/null 2>&1 || true
             exit 1
 
+  scan-docker-image:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Load Docker image from workspace
+          command: |
+            docker load -i /tmp/groundwork-api.tar
+      - snyk/scan:
+          docker-image-name: ${DOCKERHUB_REPO}:latest
+          severity-threshold: high
+          monitor-on-build: false
+
   run-production-migrations:
     docker:
       - image: cimg/node:20.19
@@ -184,22 +257,34 @@ workflows:
   ci:
     when: << pipeline.parameters.run_workflow >>
     jobs:
-      - test-unit
-      - test-integration
+      - install-deps
+      - test-unit:
+          requires:
+            - install-deps
+      - test-integration:
+          requires:
+            - install-deps
+      - scan-python-deps:
+          context:
+            - snyk
+          requires:
+            - install-deps
       - build-docker:
           context:
             - groundwork_docker
           requires:
             - test-unit
             - test-integration
+            - scan-python-deps
           filters:
             branches:
               only: main
-      - run-production-migrations:
+      - scan-docker-image:
           context:
-            - groundwork_supabase
+            - groundwork_docker
+            - snyk
           requires:
-            - verify-docker
+            - build-docker
           filters:
             branches:
               only: main
@@ -208,6 +293,15 @@ workflows:
             - groundwork_docker
           requires:
             - build-docker
+          filters:
+            branches:
+              only: main
+      - run-production-migrations:
+          context:
+            - groundwork_supabase
+          requires:
+            - verify-docker
+            - scan-docker-image
           filters:
             branches:
               only: main
