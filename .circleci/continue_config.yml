@@ -6,7 +6,27 @@ parameters:
     default: true
 
 jobs:
-  test:
+  test-unit:
+    docker:
+      - image: cimg/python:3.13
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+      - run:
+          name: Run unit tests
+          command: |
+            mkdir -p test-results
+            pytest -m unit tests/unit --junitxml=test-results/unit-results.xml
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+
+  test-integration:
     docker:
       - image: cimg/python:3.13
         environment:
@@ -31,10 +51,10 @@ jobs:
             chmod +x scripts/run_migrations.sh
             ./scripts/run_migrations.sh
       - run:
-          name: Run tests
+          name: Run integration tests
           command: |
             mkdir -p test-results
-            pytest tests/ --junitxml=test-results/results.xml
+            pytest -m integration tests/integration --junitxml=test-results/integration-results.xml
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -90,12 +110,14 @@ workflows:
   ci:
     when: << pipeline.parameters.run_workflow >>
     jobs:
-      - test
+      - test-unit
+      - test-integration
       - build-and-push:
           context:
             - groundwork_docker
           requires:
-            - test
+            - test-unit
+            - test-integration
           filters:
             branches:
               only: main

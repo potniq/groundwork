@@ -1,6 +1,9 @@
+import pytest
 from sqlalchemy import select
 
 from app.models import CityRequest
+
+pytestmark = pytest.mark.integration
 
 
 def _city_payload() -> dict:

@@ -135,14 +135,17 @@ Generate a starter set of 30 cities sequentially:
 
 ## Tests
 
-- Tests run against real Postgres
+- Unit tests (no DB):
+  - `pytest -m unit tests/unit`
+- Integration tests (Postgres-backed):
+  - `pytest -m integration tests/integration`
 - Perplexity responses are mocked with `pytest-httpx`
-- Coverage includes city creation/auth, custom slug, and city requests flow
+- Coverage includes city creation/auth, custom slug, city requests flow, and unit helpers
 
 ## CircleCI Deploy Flow
 
-- Non-main branches: run `test` job only
-- `main` branch: run `test` -> `build-and-push` -> `run-production-migrations` -> `deploy-digitalocean`
+- Non-main branches: run `test-unit` and `test-integration`
+- `main` branch: run `test-unit` + `test-integration` -> `build-and-push` -> `run-production-migrations` -> `deploy-digitalocean`
 
 ### Required CircleCI Contexts
 
