@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 import pytest
 
@@ -57,3 +58,31 @@ def test_city_intel_accepts_light_rail_mode():
 
     intel = CityIntel.model_validate(payload)
     assert intel.modes[0].type == "light_rail"
+
+
+def test_generate_intel_reads_mock_file(monkeypatch, tmp_path: Path):
+    payload = {
+        "authorities": [{"name": "Transit Authority", "website": "https://example.com", "app": None}],
+        "modes": [{"type": "metro", "operator": "Metro Co", "notes": "Frequent service"}],
+        "payment_methods": [{"method": "Card", "details": "Tap to pay"}],
+        "operating_hours": {"weekday": "5-23", "weekend": "6-23", "night_service": None},
+        "rideshare": [{"provider": "Uber", "available": True, "notes": "Available"}],
+        "airport_connections": [{"mode": "metro", "name": "Airport Line", "duration": "30 min", "cost": "$5"}],
+        "delay_info": [{"source": "Status", "url": "https://example.com/status"}],
+        "tips": "Fixture intel.",
+    }
+    fixture_file = tmp_path / "intel.json"
+    fixture_file.write_text(json.dumps(payload), encoding="utf-8")
+
+    monkeypatch.setenv("PERPLEXITY_MOCK_RESPONSE_FILE", str(fixture_file))
+    researcher.get_settings.cache_clear()
+
+    def fail_call(_: list[dict[str, str]]) -> str:
+        raise AssertionError("Perplexity API should not be called when mock fixture is configured")
+
+    monkeypatch.setattr(researcher, "_call_perplexity", fail_call)
+
+    intel = researcher.generate_intel("Sydney", "Australia")
+    assert intel.tips == "Fixture intel."
+
+    researcher.get_settings.cache_clear()

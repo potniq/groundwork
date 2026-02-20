@@ -162,6 +162,7 @@ jobs:
     docker:
       - image: cimg/base:stable
     steps:
+      - checkout
       - attach_workspace:
           at: /tmp
       - setup_remote_docker:
@@ -171,13 +172,55 @@ jobs:
           command: |
             docker load -i /tmp/groundwork-api.tar
       - run:
-          name: Start container and verify health endpoint
+          name: Start container and run API E2E smoke tests
           command: |
+            set -euo pipefail
+
             echo "Starting container for runtime verification..."
 
+            cleanup() {
+              docker logs groundwork-test >/dev/null 2>&1 && docker logs groundwork-test | tail -n 100 || true
+              docker logs groundwork-db >/dev/null 2>&1 && docker logs groundwork-db | tail -n 100 || true
+              docker stop groundwork-test >/dev/null 2>&1 || true
+              docker stop groundwork-db >/dev/null 2>&1 || true
+              docker network rm groundwork-net >/dev/null 2>&1 || true
+            }
+            trap cleanup EXIT
+
+            docker network create groundwork-net
+
+            docker run -d --name groundwork-db --network groundwork-net \
+              -e POSTGRES_DB=groundwork \
+              -e POSTGRES_USER=postgres \
+              -e POSTGRES_PASSWORD=postgres \
+              postgres:16
+
+            for i in $(seq 1 30); do
+              if docker exec groundwork-db pg_isready -U postgres -d groundwork >/dev/null 2>&1; then
+                echo "Postgres is ready after ${i}s."
+                break
+              fi
+
+              if [ "$i" -eq 30 ]; then
+                echo "Postgres did not become ready within timeout."
+                docker logs groundwork-db || true
+                docker stop groundwork-db >/dev/null 2>&1 || true
+                exit 1
+              fi
+
+              sleep 1
+            done
+
+            for migration in supabase/migrations/*.sql; do
+              echo "Applying migration ${migration}..."
+              docker exec -i groundwork-db psql -U postgres -d groundwork < "$migration"
+            done
+
             docker run -d --name groundwork-test \
+              --network groundwork-net \
               -e PORT=8080 \
-              -e DATABASE_URL=sqlite:///tmp/groundwork.db \
+              -e DATABASE_URL=postgresql://postgres:postgres@groundwork-db:5432/groundwork \
+              -e PERPLEXITY_MOCK_RESPONSE_FILE=/app/tests/fixtures/barcelona.json \
               -e PERPLEXITY_API_KEY=test_key \
               -e ADMIN_API_KEY=test_key \
               ${DOCKERHUB_REPO}:latest
@@ -185,25 +228,24 @@ jobs:
             for i in $(seq 1 30); do
               if ! docker ps -q --filter "name=groundwork-test" | grep -q .; then
                 echo "Container exited before becoming healthy."
-                docker logs groundwork-test || true
                 exit 1
               fi
 
               if docker exec groundwork-test python -c 'import urllib.request,sys;resp=urllib.request.urlopen("http://127.0.0.1:8080/health", timeout=2);sys.exit(0 if resp.status==200 else 1)' >/dev/null 2>&1; then
                 echo "Health endpoint returned HTTP 200 after ${i}s."
-                docker logs groundwork-test | tail -n 50 || true
-                docker stop groundwork-test >/dev/null 2>&1 || true
-                exit 0
+                break
               fi
 
               echo "Waiting for app startup... ($i/30)"
+              if [ "$i" -eq 30 ]; then
+                echo "Health check did not pass within timeout."
+                exit 1
+              fi
               sleep 1
             done
 
-            echo "Health check did not pass within timeout."
-            docker logs groundwork-test || true
-            docker stop groundwork-test >/dev/null 2>&1 || true
-            exit 1
+            echo "Running API E2E smoke tests..."
+            docker exec groundwork-test python /app/scripts/e2e_api_smoke.py
 
   scan-docker-image:
     docker:
