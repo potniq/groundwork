@@ -1,5 +1,7 @@
 # Groundwork by Potniq
 
+[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/D6cWZV8Ay28ELFRhwTUCno/HSujtgo1SQZFtF88eXY7qm/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/D6cWZV8Ay28ELFRhwTUCno/HSujtgo1SQZFtF88eXY7qm/tree/main)
+
 City transport intelligence for business travelers. You land in an unfamiliar city, Groundwork tells you what transport exists, how to pay, when it runs, and how to get from the airport.
 
 URL: `groundwork.potniq.com`
