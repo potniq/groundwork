@@ -9,6 +9,11 @@ parameters:
     type: boolean
     default: false
 
+environment:
+  DOCKER_REPO:
+    type: string
+    default: zmarkan/groundwork
+
 orbs:
   python: circleci/python@4.0.0
   snyk: snyk/snyk@2.3.0
@@ -131,13 +136,13 @@ jobs:
           name: Build Docker image
           command: |
             docker build \
-              -t ${DOCKERHUB_REPO}:latest \
-              -t ${DOCKERHUB_REPO}:${CIRCLE_SHA1} \
+              -t ${DOCKER_REPO}:latest \
+              -t ${DOCKER_REPO}:${CIRCLE_SHA1} \
               .
       - run:
           name: Save Docker image to workspace
           command: |
-            docker save -o /tmp/groundwork-api.tar ${DOCKERHUB_REPO}:latest ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
+            docker save -o /tmp/groundwork-api.tar ${DOCKER_REPO}:latest ${DOCKER_REPO}:${CIRCLE_SHA1}
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -159,8 +164,8 @@ jobs:
           name: Push Docker image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            docker push ${DOCKERHUB_REPO}:latest
-            docker push ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
+            docker push ${DOCKER_REPO}:latest
+            docker push ${DOCKER_REPO}:${CIRCLE_SHA1}
 
   verify-docker:
     docker:
@@ -227,7 +232,7 @@ jobs:
               -e PERPLEXITY_MOCK_RESPONSE_FILE=/app/tests/fixtures/barcelona.json \
               -e PERPLEXITY_API_KEY=test_key \
               -e ADMIN_API_KEY=test_key \
-              ${DOCKERHUB_REPO}:latest
+              ${DOCKER_REPO}:latest
 
             for i in $(seq 1 30); do
               if ! docker ps -q --filter "name=groundwork-test" | grep -q .; then
@@ -264,7 +269,7 @@ jobs:
           command: |
             docker load -i /tmp/groundwork-api.tar
       - snyk/scan:
-          docker-image-name: ${DOCKERHUB_REPO}:latest
+          docker-image-name: ${DOCKER_REPO}:latest
           severity-threshold: high
           monitor-on-build: false
 
@@ -317,7 +322,7 @@ jobs:
       
 
 workflows:
-  ci:
+  build-test-deploy:
     when: 
       and: 
         - << pipeline.parameters.run_workflow >>
@@ -337,8 +342,6 @@ workflows:
           requires:
             - install-deps
       - build-docker:
-          context:
-            - groundwork_docker
           requires:
             - test-unit
             - test-integration
@@ -348,7 +351,6 @@ workflows:
               only: main
       - scan-docker-image:
           context:
-            - groundwork_docker
             - snyk
           requires:
             - build-docker
@@ -356,8 +358,6 @@ workflows:
             branches:
               only: main
       - verify-docker:
-          context:
-            - groundwork_docker
           requires:
             - build-docker
           filters:
@@ -408,8 +408,6 @@ workflows:
           requires:
             - install-deps
       - build-docker:
-          context:
-            - groundwork_docker
           requires:
             - test-unit
             - test-integration
