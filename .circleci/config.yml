@@ -130,14 +130,16 @@ jobs:
       - run:
           name: Build Docker image
           command: |
+            REPO="${DOCKERHUB_REPO:-groundwork-api}"
             docker build \
-              -t ${DOCKERHUB_REPO}:latest \
-              -t ${DOCKERHUB_REPO}:${CIRCLE_SHA1} \
+              -t ${REPO}:latest \
+              -t ${REPO}:${CIRCLE_SHA1} \
               .
       - run:
           name: Save Docker image to workspace
           command: |
-            docker save -o /tmp/groundwork-api.tar ${DOCKERHUB_REPO}:latest ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
+            REPO="${DOCKERHUB_REPO:-groundwork-api}"
+            docker save -o /tmp/groundwork-api.tar ${REPO}:latest ${REPO}:${CIRCLE_SHA1}
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -158,9 +160,10 @@ jobs:
       - run:
           name: Push Docker image to Docker Hub
           command: |
+            REPO="${DOCKERHUB_REPO:-groundwork-api}"
             echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            docker push ${DOCKERHUB_REPO}:latest
-            docker push ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
+            docker push ${REPO}:latest
+            docker push ${REPO}:${CIRCLE_SHA1}
 
   verify-docker:
     docker:
@@ -220,6 +223,7 @@ jobs:
               docker exec -i groundwork-db psql -U postgres -d groundwork < "$migration"
             done
 
+            REPO="${DOCKERHUB_REPO:-groundwork-api}"
             docker run -d --name groundwork-test \
               --network groundwork-net \
               -e PORT=8080 \
@@ -227,7 +231,7 @@ jobs:
               -e PERPLEXITY_MOCK_RESPONSE_FILE=/app/tests/fixtures/barcelona.json \
               -e PERPLEXITY_API_KEY=test_key \
               -e ADMIN_API_KEY=test_key \
-              ${DOCKERHUB_REPO}:latest
+              ${REPO}:latest
 
             for i in $(seq 1 30); do
               if ! docker ps -q --filter "name=groundwork-test" | grep -q .; then
@@ -263,8 +267,13 @@ jobs:
           name: Load Docker image from workspace
           command: |
             docker load -i /tmp/groundwork-api.tar
+      - run:
+          name: Scan Docker image with Snyk
+          command: |
+            REPO="${DOCKERHUB_REPO:-groundwork-api}"
+            echo "Scanning image: ${REPO}:latest"
       - snyk/scan:
-          docker-image-name: ${DOCKERHUB_REPO}:latest
+          docker-image-name: ${DOCKERHUB_REPO:-groundwork-api}:latest
           severity-threshold: high
           monitor-on-build: false
 
