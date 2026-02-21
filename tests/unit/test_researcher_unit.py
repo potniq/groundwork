@@ -18,12 +18,32 @@ def test_generate_intel_retry_keeps_valid_role_alternation(monkeypatch):
     calls: list[list[dict[str, str]]] = []
 
     valid_payload = {
-        "authorities": [{"name": "Transit Authority", "website": "https://example.com", "app": None}],
+        "authorities": [
+            {
+                "name": "Transit Authority",
+                "website": "https://example.com",
+                "apps": [
+                    {
+                        "name": "Transit App",
+                        "ios_url": "https://apps.apple.com/app/transit-app/id123456",
+                        "android_url": "https://play.google.com/store/apps/details?id=com.example.transit",
+                    }
+                ],
+            }
+        ],
         "modes": [{"type": "metro", "operator": "Metro Co", "notes": "Frequent service"}],
-        "payment_methods": [{"method": "Card", "details": "Tap to pay"}],
+        "payment_methods": [{"method": "Card", "details": "Tap to pay", "url": None}],
         "operating_hours": {"weekday": "5-23", "weekend": "6-23", "night_service": None},
         "rideshare": [{"provider": "Uber", "available": True, "notes": "Available"}],
-        "airport_connections": [{"mode": "metro", "name": "Airport Line", "duration": "30 min", "cost": "$5"}],
+        "airport_connections": [
+            {
+                "mode": "metro",
+                "name": "Airport Line",
+                "duration": "30 min",
+                "cost": "$5",
+                "info_url": "https://example.com/airport-line",
+            }
+        ],
         "delay_info": [{"source": "Status", "url": "https://example.com/status"}],
         "tips": "Use the metro for business districts.",
     }
@@ -46,12 +66,20 @@ def test_generate_intel_retry_keeps_valid_role_alternation(monkeypatch):
 
 def test_city_intel_accepts_light_rail_mode():
     payload = {
-        "authorities": [{"name": "Transit Authority", "website": "https://example.com", "app": None}],
+        "authorities": [{"name": "Transit Authority", "website": "https://example.com", "apps": []}],
         "modes": [{"type": "light_rail", "operator": "Light Rail Co", "notes": "Frequent service"}],
-        "payment_methods": [{"method": "Card", "details": "Tap to pay"}],
+        "payment_methods": [{"method": "Card", "details": "Tap to pay", "url": None}],
         "operating_hours": {"weekday": "5-23", "weekend": "6-23", "night_service": None},
         "rideshare": [{"provider": "Uber", "available": True, "notes": "Available"}],
-        "airport_connections": [{"mode": "light_rail", "name": "Airport Link", "duration": "30 min", "cost": "$5"}],
+        "airport_connections": [
+            {
+                "mode": "light_rail",
+                "name": "Airport Link",
+                "duration": "30 min",
+                "cost": "$5",
+                "info_url": "https://example.com/airport-link",
+            }
+        ],
         "delay_info": [{"source": "Status", "url": "https://example.com/status"}],
         "tips": "Use the light rail for business districts.",
     }
@@ -62,12 +90,20 @@ def test_city_intel_accepts_light_rail_mode():
 
 def test_generate_intel_reads_mock_file(monkeypatch, tmp_path: Path):
     payload = {
-        "authorities": [{"name": "Transit Authority", "website": "https://example.com", "app": None}],
+        "authorities": [{"name": "Transit Authority", "website": "https://example.com", "apps": []}],
         "modes": [{"type": "metro", "operator": "Metro Co", "notes": "Frequent service"}],
-        "payment_methods": [{"method": "Card", "details": "Tap to pay"}],
+        "payment_methods": [{"method": "Card", "details": "Tap to pay", "url": None}],
         "operating_hours": {"weekday": "5-23", "weekend": "6-23", "night_service": None},
         "rideshare": [{"provider": "Uber", "available": True, "notes": "Available"}],
-        "airport_connections": [{"mode": "metro", "name": "Airport Line", "duration": "30 min", "cost": "$5"}],
+        "airport_connections": [
+            {
+                "mode": "metro",
+                "name": "Airport Line",
+                "duration": "30 min",
+                "cost": "$5",
+                "info_url": "https://example.com/airport-line",
+            }
+        ],
         "delay_info": [{"source": "Status", "url": "https://example.com/status"}],
         "tips": "Fixture intel.",
     }
@@ -86,3 +122,13 @@ def test_generate_intel_reads_mock_file(monkeypatch, tmp_path: Path):
     assert intel.tips == "Fixture intel."
 
     researcher.get_settings.cache_clear()
+
+
+def test_system_prompt_includes_link_requirements():
+    prompt = researcher._system_prompt()
+    assert '"ios_url":"string|null"' in prompt
+    assert '"android_url":"string|null"' in prompt
+    assert '"url":"string|null"' in prompt
+    assert '"info_url":"string"' in prompt
+    assert "official URL in payment_methods.url" in prompt
+    assert "airport_connections.info_url" in prompt

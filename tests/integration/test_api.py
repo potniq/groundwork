@@ -54,6 +54,10 @@ def test_get_city_html(client, sample_city):
     assert response.status_code == 200
     assert "Barcelona" in response.text
     assert "Transport Authorities" in response.text
+    assert "iOS app" in response.text
+    assert "Android app" in response.text
+    assert "Airport info" in response.text
+    assert "Open" in response.text
 
 
 def test_create_city_success(client, mock_perplexity_response):
