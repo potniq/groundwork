@@ -130,6 +130,10 @@ jobs:
       - run:
           name: Build Docker image
           command: |
+            if [ -z "${DOCKERHUB_REPO:-}" ]; then
+              echo "Error: DOCKERHUB_REPO environment variable is not set"
+              exit 1
+            fi
             docker build \
               -t ${DOCKERHUB_REPO}:latest \
               -t ${DOCKERHUB_REPO}:${CIRCLE_SHA1} \
@@ -137,6 +141,10 @@ jobs:
       - run:
           name: Save Docker image to workspace
           command: |
+            if [ -z "${DOCKERHUB_REPO:-}" ]; then
+              echo "Error: DOCKERHUB_REPO environment variable is not set"
+              exit 1
+            fi
             docker save -o /tmp/groundwork-api.tar ${DOCKERHUB_REPO}:latest ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
       - persist_to_workspace:
           root: /tmp
@@ -158,6 +166,10 @@ jobs:
       - run:
           name: Push Docker image to Docker Hub
           command: |
+            if [ -z "${DOCKERHUB_REPO:-}" ]; then
+              echo "Error: DOCKERHUB_REPO environment variable is not set"
+              exit 1
+            fi
             echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             docker push ${DOCKERHUB_REPO}:latest
             docker push ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
@@ -179,6 +191,11 @@ jobs:
           name: Start container and run API E2E smoke tests
           command: |
             set -euo pipefail
+
+            if [ -z "${DOCKERHUB_REPO:-}" ]; then
+              echo "Error: DOCKERHUB_REPO environment variable is not set"
+              exit 1
+            fi
 
             echo "Starting container for runtime verification..."
 
@@ -263,6 +280,14 @@ jobs:
           name: Load Docker image from workspace
           command: |
             docker load -i /tmp/groundwork-api.tar
+      - run:
+          name: Verify DOCKERHUB_REPO is set
+          command: |
+            if [ -z "${DOCKERHUB_REPO:-}" ]; then
+              echo "Error: DOCKERHUB_REPO environment variable is not set"
+              exit 1
+            fi
+            echo "DOCKERHUB_REPO is set to: ${DOCKERHUB_REPO}"
       - snyk/scan:
           docker-image-name: ${DOCKERHUB_REPO}:latest
           severity-threshold: high
