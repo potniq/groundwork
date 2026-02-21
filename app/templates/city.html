@@ -2,6 +2,23 @@
 
 {% block title %}{{ city.city_name }} Transport Guide | Groundwork{% endblock %}
 
+{% block meta %}
+{% set page_title = city.city_name ~ " Transport Guide | Groundwork" %}
+{% set page_description = "City transport intelligence for " ~ city.city_name ~ ", " ~ city.country ~ ". Transit authorities, payment methods, operating hours, rideshare options, and airport connections." %}
+{% set base_url = request.url.scheme ~ "://" ~ request.url.netloc %}
+<meta name="description" content="{{ page_description }}">
+<meta property="og:title" content="{{ page_title }}">
+<meta property="og:description" content="{{ page_description }}">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Groundwork by Potniq">
+<meta property="og:image" content="{{ base_url }}/static/groundwork_logo.png">
+<meta property="og:url" content="{{ base_url }}/{{ city.slug }}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{ page_title }}">
+<meta name="twitter:description" content="{{ page_description }}">
+<meta name="twitter:image" content="{{ base_url }}/static/groundwork_logo.png">
+{% endblock %}
+
 {% block content %}
 <section class="city-hero panel">
     <div>

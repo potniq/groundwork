@@ -4,6 +4,19 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Groundwork by Potniq{% endblock %}</title>
+    {% block meta %}
+    <meta name="description" content="Reference-grade city transport intelligence for business travelers. Transit options, payment methods, operating hours, and airport connections.">
+    <meta property="og:title" content="Groundwork by Potniq">
+    <meta property="og:description" content="Reference-grade city transport intelligence for business travelers. Transit options, payment methods, operating hours, and airport connections.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Groundwork by Potniq">
+    <meta property="og:image" content="{{ request.url.scheme }}://{{ request.url.netloc }}/static/groundwork_logo.png">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Groundwork by Potniq">
+    <meta name="twitter:description" content="Reference-grade city transport intelligence for business travelers.">
+    <meta name="twitter:image" content="{{ request.url.scheme }}://{{ request.url.netloc }}/static/groundwork_logo.png">
+    {% endblock %}
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="stylesheet" href="/static/style.css">
 </head>

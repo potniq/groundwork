@@ -2,6 +2,21 @@
 
 {% block title %}Requested Cities | Groundwork{% endblock %}
 
+{% block meta %}
+{% set base_url = request.url.scheme ~ "://" ~ request.url.netloc %}
+<meta name="description" content="View and submit city requests for Groundwork transport intelligence coverage.">
+<meta property="og:title" content="Requested Cities | Groundwork">
+<meta property="og:description" content="View and submit city requests for Groundwork transport intelligence coverage.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Groundwork by Potniq">
+<meta property="og:image" content="{{ base_url }}/static/groundwork_logo.png">
+<meta property="og:url" content="{{ base_url }}/requests">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Requested Cities | Groundwork">
+<meta name="twitter:description" content="View and submit city requests for Groundwork transport intelligence coverage.">
+<meta name="twitter:image" content="{{ base_url }}/static/groundwork_logo.png">
+{% endblock %}
+
 {% block content %}
 <section class="panel">
     <h1>Requested Cities</h1>
