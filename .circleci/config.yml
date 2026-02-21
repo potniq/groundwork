@@ -130,6 +130,12 @@ jobs:
       - run:
           name: Build Docker image
           command: |
+            if [ -z "$DOCKERHUB_REPO" ]; then
+              echo "ERROR: DOCKERHUB_REPO environment variable is not set."
+              echo "Please configure DOCKERHUB_REPO in the groundwork_docker CircleCI context."
+              echo "Example value: your-org/groundwork"
+              exit 1
+            fi
             docker build \
               -t ${DOCKERHUB_REPO}:latest \
               -t ${DOCKERHUB_REPO}:${CIRCLE_SHA1} \
