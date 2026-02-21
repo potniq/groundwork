@@ -341,8 +341,6 @@ workflows:
           requires:
             - install-deps
       - build-docker:
-          context:
-            - groundwork_docker
           requires:
             - test-unit
             - test-integration
@@ -352,7 +350,6 @@ workflows:
               only: main
       - scan-docker-image:
           context:
-            - groundwork_docker
             - snyk
           requires:
             - build-docker
@@ -360,8 +357,6 @@ workflows:
             branches:
               only: main
       - verify-docker:
-          context:
-            - groundwork_docker
           requires:
             - build-docker
           filters:
@@ -412,8 +407,6 @@ workflows:
           requires:
             - install-deps
       - build-docker:
-          context:
-            - groundwork_docker
           requires:
             - test-unit
             - test-integration
@@ -423,13 +416,10 @@ workflows:
               only: main
       - scan-docker-image:
           context:
-            - groundwork_docker
             - snyk
           requires:
             - build-docker
       - verify-docker:
-          context:
-            - groundwork_docker
           requires:
             - build-docker
 
