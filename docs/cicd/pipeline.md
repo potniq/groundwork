@@ -1,71 +1,146 @@
 # Groundwork: A Reference CircleCI Pipeline
 
-**Repository:** [github.com/potniq/groundwork](https://github.com/potniq/groundwork)  
+**Repository:** [github.com/potniq/groundwork](https://github.com/potniq/groundwork)
 **Passing build (full main pipeline):** [View on CircleCI](https://app.circleci.com/workflow/e49a8957-1567-4fe7-98a4-ced1f54db59b)
 
 
+## High level overview
 
-## What This Pipeline Demonstrates
+This pipeline is for a production application — Groundwork by Potniq. The app is a dockerized Python/FastAPI web application backed by a PostgreSQL database, deployed on DigitalOcean App Platform.
 
-This is a production CI/CD pipeline for a Python/FastAPI. It covers the full lifecycle from dependency management through automated testing, security scanning, container build and verification, release management, and deployment to DigitalOcean App Platform. 
+The pipeline covers the full lifecycle of shipping production software:
 
-The pipeline is designed around a real application, so the patterns here reflect the kinds of decisions you would make when shipping production software.
+- **Selective execution** — path filtering skips the pipeline entirely for documentation-only changes, saving compute
+- **Parallel quality gates** — unit tests, integration tests, and dependency scanning run concurrently for fast feedback
+- **Branch-based promotion** — feature branches run validations only; the `main` branch extends into container build, security scanning, release, and deployment
+- **Security scanning** — both Python dependencies and the built Docker container are scanned for vulnerabilities using Snyk
+- **Nightly scheduled builds** — catch newly disclosed vulnerabilities and confirm the build stays healthy without waiting for a code change
 
-## Pipeline Structure
+The pipeline is split across two configuration files in `.circleci/`:
 
-The pipeline uses two configuration files with different entry points depending on how a build is triggered. Both configuration are located in `.circleci/` dir.
+- `setup-config.yml` — the entry point for commit-triggered builds, using [dynamic config](https://circleci.com/docs/guides/orchestrate/dynamic-config/) and path filtering to decide whether to run the full pipeline
+- `config.yml` — the main configuration containing all job definitions and two mutually exclusive workflows, selected by pipeline parameters
 
-`setup-config.yml` is the entry point for commit-triggered builds. It's a setup workflow - first stage in a [dynamic CircleCI pipeline](https://circleci.com/docs/guides/orchestrate/dynamic-config/) and uses the `path-filtering` orb to evaluate what changed in the commit. 
-File patterns are mapped to a `run_workflow` pipeline parameter — changes to application code, tests, migrations, the Dockerfile, dependencies, or pipeline config itself set `run_workflow` to `true` and hand off to the main config. Changes limited to markdown or documentation files set it to `false`, skipping the pipeline entirely and avoiding unnecessary compute.
 
-`config.yml` is the main pipeline configuration. It contains all job definitions and two workflows, selected by pipeline parameters: `build-test-deploy` runs when `run_workflow` is true (commit-triggered builds), and `nightly_build` runs when `nightly_build` is true (scheduled triggers). The two workflows are mutually exclusive — the parameter conditions ensure only one activates per pipeline run.
+## Validation flow
 
-Scheduled pipelines trigger `config.yml` directly with `nightly_build: true` and `run_workflow: false`, bypassing `setup-config.yml` entirely since there's no commit to evaluate.
+Every commit that touches application code goes through three parallel validation jobs before anything is built or shipped:
 
-## Commit-Triggered Pipeline
+1. **Dependency installation (`install-deps`)** — installs Python packages from `requirements.txt` into a user-site directory, cached by a key derived from the requirements file checksum. The installed packages are persisted to a workspace so downstream jobs reuse them without reinstalling.
 
-### Feature Branches
+2. **Unit tests (`test-unit`)** — runs the unit test suite with `pytest`, publishing JUnit XML results and artifacts to CircleCI for visibility in the test insights dashboard.
 
-On feature branches, the pipeline focuses on fast feedback. A dedicated `install-deps` job installs Python packages once, using a CircleCI cache keyed by `requirements.txt`. The installed packages are persisted to a workspace so every downstream job reuses them without reinstalling. 
+3. **Integration tests (`test-integration`)** — runs integration tests against a real PostgreSQL instance provisioned as a [sidecar container](https://circleci.com/docs/using-docker#using-multiple-docker-images). Database migrations are applied before the tests execute, validating the full database interaction path.
 
-Three jobs then run in parallel: unit tests provide fast isolated feedback, integration tests validate database interactions against a PostgreSQL instance running as a sidecar container, and a Snyk dependency scan checks `requirements.txt` for known vulnerabilities. Both test jobs publish JUnit results and artifacts to CircleCI for visibility. Nothing gets built or shipped on feature branches.
+4. **Dependency scan (`scan-python-deps`)** — uses the Snyk orb to scan `requirements.txt` for known vulnerabilities at the `high` severity threshold.
 
-### Default Branch
+Unit tests, integration tests, and the dependency scan all run in parallel after `install-deps` completes, so the feedback loop is as fast as the slowest of the three.
 
-On `main`, the pipeline runs the same test and scan gates, then extends into container, release, and deployment stages. Each stage gates on the one before it — deployment is only reachable if every upstream check has passed.
+On feature branches, the pipeline stops here. Nothing gets built or deployed until code reaches `main`.
 
-**Container build and validation:** The pipeline builds a Docker image with Docker layer caching enabled, reducing build times by reusing unchanged layers between runs. The image is tagged with both `latest` and the commit SHA, then exported as a tarball to the workspace. Two jobs run against the built image: one loads and starts the container alongside a PostgreSQL instance, applies migrations, verifies the health endpoint responds, and runs E2E API smoke tests. The other runs a Snyk security scan against the image. Both happen before the image reaches any registry.
 
-**Production migrations:** Once the container is verified and scanned, production database migrations run against Supabase using `supabase db push`.
+## Dynamic workflow selection
 
-**Release:** The verified image is pushed to Docker Hub with versioned and `latest` tags.
+The pipeline uses two mechanisms to control what runs and when.
 
-**Deployment:** The pipeline triggers a DigitalOcean App Platform deployment via `doctl`, using CircleCI's release management to plan the deploy beforehand and update its status to `SUCCESS` or `FAILED` based on the outcome. This surfaces deployment history in CircleCI's deploys view and makes rollbacks available if needed.
+### Path filtering (setup config)
 
-## Nightly Pipeline
+`setup-config.yml` is a [setup workflow](https://circleci.com/docs/dynamic-config/) — the first stage in a dynamic pipeline. It uses the `path-filtering` orb to inspect which files changed in the commit and maps file patterns to the `run_workflow` pipeline parameter:
 
-A scheduled pipeline runs nightly, independently of code changes. It runs the full test suite — unit tests, integration tests against the PostgreSQL sidecar, and the Snyk dependency scan — then builds the Docker image, runs the Snyk container scan, and verifies the image starts and responds correctly.
+- Changes to application code (`app/`, `tests/`, `scripts/`), infrastructure (`Dockerfile`, `requirements.txt`, `.circleci/`), or database migrations (`supabase/`) set `run_workflow: true`
+- Changes limited to markdown files (`*.md`, `docs/`) set `run_workflow: false`, skipping the pipeline entirely
 
-The nightly pipeline does not deploy. Its purpose is to catch newly disclosed vulnerabilities in dependencies or the container image, and to confirm the build remains healthy, without waiting for a code change to trigger a run.
+This avoids burning CI minutes on documentation-only commits.
 
-## Security and Credential Handling
+### Pipeline parameters (main config)
 
-Credentials are managed through CircleCI contexts, each scoped to the jobs that need them. The `snyk` context attaches only to scan jobs. `groundwork_docker` attaches to Docker Hub push operations. `groundwork_supabase` is limited to the migration job. `groundwork_digitalocean` is scoped to the deployment job. On feature branches, none of the release or deployment contexts are attached — those jobs only run on `main`. There is no path through the pipeline where credentials are accessible outside their intended scope.
+`config.yml` defines two workflows controlled by pipeline parameters:
 
-## CircleCI Features in Use
+- **`ci`** — activates when `run_workflow` is `true` and `nightly_build` is `false` (commit-triggered builds)
+- **`nightly_build`** — activates when `nightly_build` is `true` and `run_workflow` is `false` (scheduled triggers)
 
-- **Setup workflows with path filtering** skip the full pipeline for documentation-only changes
-- **Pipeline parameters** with mutual exclusion conditions cleanly separate commit-triggered and scheduled workflows in a single config
-- **Docker layer caching** on the build job reduces image build times across frequent merges and nightly runs
-- **Workspace handoff** passes cached dependencies and the Docker image tarball between jobs without rebuilding
-- **Sidecar containers** provide real PostgreSQL instances for both integration tests and container verification
-- **Branch filters** restrict release and deployment stages to the default branch
-- **Parallelized quality gates** run unit tests, integration tests, and dependency scanning concurrently
-- **Strict `requires` chains** enforce stage ordering so deployment can only proceed after all upstream jobs succeed
-- **JUnit test results and stored artifacts** provide observability across every run
-- **Scheduled pipelines** run nightly security scans and build verification independently of code changes
-- **Release management** (plan/update) surfaces deployment status in the deploys view and enables rollbacks
+The boolean conditions are mutually exclusive, ensuring only one workflow runs per pipeline execution.
 
-## Future Optimizations
+### Nightly validations
 
-Several enhancements could build on this foundation. Automated post-deploy health verification or rollback gates would complement the existing manual rollback capability. Config policies could enforce pipeline governance standards across an organization. Snyk scan thresholds could be tuned by severity level and allowlist policy based on risk tolerance. As the test suite grows, parallel test sharding would keep feedback times manageable. Where the deployment platform supports it, OIDC-based cloud authentication would further reduce reliance on long-lived credentials. Dockerfile layer ordering could also be optimized to maximize cache hit rates.
+A [scheduled pipeline](https://circleci.com/docs/scheduled-pipelines/) triggers `config.yml` directly with `nightly_build: true` and `run_workflow: false`, bypassing `setup-config.yml` since there's no commit diff to evaluate.
+
+The nightly workflow runs the full test suite (unit, integration, dependency scan), builds the Docker image, scans the container with Snyk, and verifies the image starts and responds correctly. It does **not** deploy — its purpose is to catch newly disclosed vulnerabilities in dependencies or the base image and to confirm the build remains healthy between code changes.
+
+
+## Security measures
+
+Security is handled at two levels, with credentials scoped tightly to the jobs that need them.
+
+### Vulnerability scanning
+
+- **Dependency scanning** — the `scan-python-deps` job uses the [Snyk orb](https://circleci.com/developer/orbs/orb/snyk/snyk) to scan `requirements.txt` for known vulnerabilities, with a `high` severity threshold. This runs on every commit that triggers the pipeline.
+- **Container scanning** — the `scan-docker-image` job scans the built Docker image for OS-level and application vulnerabilities. This runs only on `main`, after the image is built but before it's pushed to any registry.
+
+Both scans also run in the nightly pipeline to catch newly disclosed CVEs.
+
+### Credential isolation with contexts
+
+Each set of credentials is managed through a dedicated [CircleCI context](https://circleci.com/docs/contexts/), attached only to the jobs that need them:
+
+| Context | Scope | Used by |
+|---|---|---|
+| `snyk` | Snyk API token | `scan-python-deps`, `scan-docker-image` |
+| `groundwork_docker` | Docker Hub credentials | `push-docker` |
+| `groundwork_supabase` | Supabase database URL | `run-production-migrations` |
+| `groundwork_digitalocean` | DigitalOcean API token | `deploy-digitalocean` |
+
+On feature branches, none of the deployment or release contexts are attached — those jobs only run on `main` via branch filters. There is no path through the pipeline where credentials are accessible outside their intended scope.
+
+
+## Pipeline optimizations
+
+The pipeline uses several strategies to keep feedback fast and avoid redundant work:
+
+- **Parallel quality gates** — unit tests, integration tests, and the Snyk dependency scan run concurrently after dependency installation, so total validation time equals the slowest job rather than the sum of all three.
+- **Dependency caching** — pip packages are cached with a key derived from `requirements.txt` and the executor architecture. Cache hits skip installation entirely on subsequent runs.
+- **Workspace handoff** — installed dependencies are persisted to a workspace once and attached by every downstream job, avoiding repeated pip installs. The built Docker image tarball is similarly passed through the workspace to verification, scanning, and push jobs.
+- **Docker layer caching** — the `build-docker` job uses `setup_remote_docker` which allows Docker to reuse unchanged layers from previous builds, reducing image build times on frequent merges.
+- **CircleCI orbs** — the `circleci/python` and `snyk/snyk` orbs encapsulate common tasks (package installation, vulnerability scanning) and reduce boilerplate in the config.
+- **Pipeline parameter (`docker_repo`)** — the Docker repository name is defined once as a pipeline parameter and referenced throughout, avoiding duplication and making it easy to change.
+
+
+## Deployment
+
+Once all quality gates pass on `main`, the pipeline proceeds through four stages, each gating on the previous one:
+
+### Container build and verification
+
+The `build-docker` job builds the image and tags it with both `latest` and the commit SHA (`CIRCLE_SHA1`), then exports it as a tarball to the workspace. Two verification jobs run in parallel against the saved image:
+
+- **`verify-docker`** — loads the image, starts it alongside a PostgreSQL container on a shared Docker network, applies database migrations, waits for the health endpoint to return HTTP 200, then runs an E2E API smoke test script (`scripts/e2e_api_smoke.py`). This validates the container actually works end-to-end before it's released.
+- **`scan-docker-image`** — runs a Snyk container scan against the image.
+
+### Production database migrations
+
+The `run-production-migrations` job uses the [Supabase CLI](https://supabase.com/docs/guides/cli) (`supabase db push`) to apply any pending migrations to the production database. This runs after the container is verified and scanned, ensuring the database schema is ready before the new application version is deployed.
+
+### Image push
+
+The `push-docker` job authenticates with Docker Hub and pushes the image with both the `latest` and commit SHA tags. This only happens after migrations have succeeded.
+
+### DigitalOcean deployment
+
+The `deploy-digitalocean` job:
+
+1. Installs `doctl` (the DigitalOcean CLI)
+2. Plans a release using `circleci run release plan`, registering the deployment intent with CircleCI's [release management](https://circleci.com/docs/release/releases-overview/)
+3. Triggers a DigitalOcean App Platform deployment via `doctl apps create-deployment --wait`
+4. Updates the release status to `SUCCESS` or `FAILED` based on the outcome
+
+This surfaces deployment history in CircleCI's releases view and makes rollbacks traceable.
+
+
+## Future optimizations
+
+Several enhancements could build on this foundation as the project and team grow:
+
+- **OIDC authentication for cloud deployments** — the pipeline currently authenticates with DigitalOcean using a long-lived API token stored in a context. For cloud providers that support it (such as AWS, GCP, and Azure), CircleCI's [OIDC token support](https://circleci.com/docs/openid-connect-tokens/) would allow jobs to assume short-lived credentials at runtime, eliminating stored secrets entirely. DigitalOcean App Platform does not currently support OIDC-authenticated deployments, but this would be the preferred approach for any AWS or GCP workloads.
+- **Multi-environment promotion with gating** — the pipeline currently deploys directly to production from `main`. A natural next step would be introducing staging and development environments with gated promotion between them — deploying automatically to a staging environment on merge, running post-deploy verification there, and requiring a manual approval step before promoting to production. CircleCI's [approval jobs](https://circleci.com/docs/workflows/#holding-a-workflow-for-a-manual-approval) support this pattern natively.
+- **Test parallelism and sharding** — as the test suite grows, CircleCI's [test splitting](https://circleci.com/docs/parallelism-faster-jobs/) can distribute tests across multiple containers based on timing data, keeping feedback times manageable.
+- **Config policies** — [CircleCI config policies](https://circleci.com/docs/config-policy-management-overview/) could enforce pipeline governance standards (e.g., requiring security scans, restricting deployment contexts) across an organization's projects.

@@ -149,6 +149,8 @@ Generate a starter set of 30 cities sequentially:
 
 ## CircleCI Deploy Flow
 
+For a detailed pipeline writeup, see [docs/cicd/pipeline.md](docs/cicd/pipeline.md).
+
 - Non-main branches: run `install-deps` -> `test-unit` + `test-integration` + `scan-python-deps`
 - `main` branch: run `install-deps` -> `test-unit` + `test-integration` + `scan-python-deps` -> `build-docker` -> `verify-docker` + `scan-docker-image` -> `run-production-migrations` -> `push-docker` -> `deploy-digitalocean`
 
