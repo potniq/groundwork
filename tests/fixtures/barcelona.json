@@ -3,12 +3,18 @@
     {
       "name": "Transports Metropolitans de Barcelona",
       "website": "https://www.tmb.cat/",
-      "app": "TMB App"
+      "apps": [
+        {
+          "name": "TMB App",
+          "ios_url": "https://apps.apple.com/es/app/tmb-app/id417318080",
+          "android_url": "https://play.google.com/store/apps/details?id=com.geomobile.tmbmobile"
+        }
+      ]
     },
     {
       "name": "Autoritat del Transport Metropolita",
       "website": "https://www.atm.cat/",
-      "app": null
+      "apps": []
     }
   ],
   "modes": [
@@ -36,15 +42,18 @@
   "payment_methods": [
     {
       "method": "T-mobilitat card",
-      "details": "Reloadable integrated transit card valid across metro, bus, tram, and regional rail zones."
+      "details": "Reloadable integrated transit card valid across metro, bus, tram, and regional rail zones.",
+      "url": "https://www.t-mobilitat.cat/web/t-mobilitat/"
     },
     {
       "method": "Contactless bank card",
-      "details": "Accepted for many tickets and top-ups at station machines."
+      "details": "Accepted for many tickets and top-ups at station machines.",
+      "url": null
     },
     {
       "method": "Mobile tickets",
-      "details": "Available via operator apps for selected products."
+      "details": "Available via operator apps for selected products.",
+      "url": "https://www.tmb.cat/en/customer-services/user-guide/app"
     }
   ],
   "operating_hours": {
@@ -74,19 +83,22 @@
       "mode": "metro",
       "name": "L9 Sud",
       "duration": "30-40 min to central interchanges",
-      "cost": "EUR 5.50 airport ticket"
+      "cost": "EUR 5.50 airport ticket",
+      "info_url": "https://www.tmb.cat/en/barcelona/metro/lines/l9-sud"
     },
     {
       "mode": "train",
       "name": "R2 Nord",
       "duration": "25-35 min to city center stations",
-      "cost": "EUR 4.90 single (zone-dependent products available)"
+      "cost": "EUR 4.90 single (zone-dependent products available)",
+      "info_url": "https://rodalies.gencat.cat/en/horaris/"
     },
     {
       "mode": "bus",
       "name": "Aerobus",
       "duration": "35-45 min to Placa de Catalunya",
-      "cost": "EUR 6.75 one-way"
+      "cost": "EUR 6.75 one-way",
+      "info_url": "https://aerobusbarcelona.es/"
     }
   ],
   "delay_info": [

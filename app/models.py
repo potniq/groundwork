@@ -37,10 +37,17 @@ class CityRequest(Base):
     status: Mapped[str] = mapped_column(Text, nullable=False, default="pending")
 
 
+class AppLink(BaseModel):
+    name: str
+    ios_url: str | None = None
+    android_url: str | None = None
+
+
 class Authority(BaseModel):
     name: str
     website: str
     app: str | None = None
+    apps: list[AppLink] = Field(default_factory=list)
 
 
 class TransportMode(BaseModel):
@@ -64,6 +71,7 @@ class TransportMode(BaseModel):
 class PaymentMethod(BaseModel):
     method: str
     details: str
+    url: str | None = None
 
 
 class OperatingHours(BaseModel):
@@ -83,6 +91,7 @@ class AirportConnection(BaseModel):
     name: str
     duration: str
     cost: str
+    info_url: str | None = None
 
 
 class DelaySource(BaseModel):

@@ -16,7 +16,23 @@
         <li>
             <strong>{{ authority.name }}</strong>
             <a href="{{ authority.website }}" target="_blank" rel="noopener noreferrer">Website</a>
-            {% if authority.app %}<span class="subdued">App: {{ authority.app }}</span>{% endif %}
+            {% if authority.apps %}
+            <ul>
+                {% for app in authority.apps %}
+                <li>
+                    <span class="subdued">{{ app.name }}:</span>
+                    {% if app.ios_url %}
+                    <a href="{{ app.ios_url }}" target="_blank" rel="noopener noreferrer">iOS app</a>
+                    {% endif %}
+                    {% if app.android_url %}
+                    <a href="{{ app.android_url }}" target="_blank" rel="noopener noreferrer">Android app</a>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% elif authority.app %}
+            <span class="subdued">App: {{ authority.app }}</span>
+            {% endif %}
         </li>
         {% endfor %}
     </ul>
@@ -50,7 +66,12 @@
     <h2>Paying for Transport</h2>
     <ul>
         {% for payment in intel.payment_methods %}
-        <li><strong>{{ payment.method }}:</strong> {{ payment.details }}</li>
+        <li>
+            <strong>{{ payment.method }}:</strong> {{ payment.details }}
+            {% if payment.url %}
+            <a href="{{ payment.url }}" target="_blank" rel="noopener noreferrer">Open</a>
+            {% endif %}
+        </li>
         {% endfor %}
     </ul>
 </section>
@@ -83,7 +104,12 @@
     <h2>Airport Connections</h2>
     <ul>
         {% for connection in intel.airport_connections %}
-        <li><strong>{{ connection.mode }} - {{ connection.name }}:</strong> {{ connection.duration }}, {{ connection.cost }}</li>
+        <li>
+            <strong>{{ connection.mode }} - {{ connection.name }}:</strong> {{ connection.duration }}, {{ connection.cost }}
+            {% if connection.info_url %}
+            <a href="{{ connection.info_url }}" target="_blank" rel="noopener noreferrer">Airport info</a>
+            {% endif %}
+        </li>
         {% endfor %}
     </ul>
 </section>
