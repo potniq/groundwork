@@ -6,6 +6,7 @@ from pydantic import ValidationError
 os.environ.setdefault("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/groundwork_test")
 os.environ.setdefault("PERPLEXITY_API_KEY", "test-pplx-key")
 os.environ.setdefault("ADMIN_API_KEY", "test-key")
+os.environ.setdefault("VERIFY_GENERATED_URLS", "false")
 
 from app.main import country_flag, slugify
 from app.models import CityRequestCreate

@@ -1,0 +1,116 @@
+{
+  "authorities": [
+    {
+      "name": "Transport for London",
+      "website": "https://tfl.gov.uk",
+      "app": null,
+      "apps": [
+        {
+          "name": "TfL Go",
+          "ios_url": "https://apps.apple.com/gb/app/tfl-go-plan-eat-cycle-save/id1419541638",
+          "android_url": "https://play.google.com/store/apps/details?id=uk.co.tfl.gotflpro&hl=en_GB"
+        }
+      ]
+    }
+  ],
+  "modes": [
+    {
+      "type": "metro",
+      "operator": "Transport for London",
+      "notes": "London Underground (Tube) with 11 lines; Night Tube on some lines for late-night travel."
+    },
+    {
+      "type": "metro",
+      "operator": "Transport for London",
+      "notes": "Elizabeth line connects Heathrow to Paddington (30 min), central London, and other airports."
+    },
+    {
+      "type": "bus",
+      "operator": "Transport for London",
+      "notes": "Extensive network including night buses (e.g., N9 from Heathrow)."
+    },
+    {
+      "type": "train",
+      "operator": "Transport for London / National Rail",
+      "notes": "Overground, Elizabeth line, and suburban trains; Heathrow Express (15 min to Paddington)."
+    },
+    {
+      "type": "train",
+      "operator": "Heathrow Express",
+      "notes": "Fast train from Heathrow T2/3 to Paddington (15 min)."
+    }
+  ],
+  "payment_methods": [
+    {
+      "method": "Oyster card / Contactless",
+      "details": "Pay as you go on Tube, buses, Elizabeth line, Overground; daily/weekly capping.",
+      "url": "https://tfl.gov.uk/fares"
+    },
+    {
+      "method": "TfL Travelcard",
+      "details": "Unlimited travel for set zones and periods.",
+      "url": "https://tfl.gov.uk/fares/free-and-discounted-travel"
+    },
+    {
+      "method": "Visitor Oyster card",
+      "details": "Pre-loaded for short stays; available online or at airports.",
+      "url": "https://tfl.gov.uk/travel-information/visiting-london/visitor-oyster-card"
+    }
+  ],
+  "operating_hours": {
+    "weekday": "Tube: ~5AM-12:30AM (peak every 2-5 min); Buses 24/7 with night services.",
+    "weekend": "Tube: ~5:30AM-12:30AM; Night Tube on Fridays/Saturdays extends to ~5AM on select lines; Buses 24/7.",
+    "night_service": "Night Tube (Fri-Sat) on Central, Jubilee, Northern, Piccadilly, Victoria lines; Night buses all nights."
+  },
+  "rideshare": [
+    {
+      "provider": "Uber",
+      "available": true,
+      "notes": "Widely available; licensed black cabs also common (fixed fares to center ~£50-80)."
+    }
+  ],
+  "airport_connections": [
+    {
+      "mode": "train",
+      "name": "Heathrow Express to Paddington",
+      "duration": "15 min (T2/3)",
+      "cost": "£25 single",
+      "info_url": null
+    },
+    {
+      "mode": "metro",
+      "name": "Elizabeth line to Paddington/Central",
+      "duration": "30 min",
+      "cost": "£12.80 peak",
+      "info_url": null
+    },
+    {
+      "mode": "metro",
+      "name": "Piccadilly line (Tube) to Central London",
+      "duration": "50-60 min",
+      "cost": "£6.70 peak",
+      "info_url": null
+    },
+    {
+      "mode": "bus",
+      "name": "National Express coach to Victoria",
+      "duration": "40-90 min",
+      "cost": "£6-12",
+      "info_url": null
+    },
+    {
+      "mode": "bus",
+      "name": "N9 night bus to Trafalgar Square",
+      "duration": "75 min",
+      "cost": "£1.75",
+      "info_url": null
+    }
+  ],
+  "delay_info": [
+    {
+      "source": "TfL Status",
+      "url": "https://tfl.gov.uk/status/updates"
+    }
+  ],
+  "tips": "Get Oyster/contactless for capping (max daily spend ~£8.50 Zones 1-2); Use TfL Go app for live updates/routes; Avoid peak hours (6:30-9:30AM) on Tube if possible; Black cabs are reliable for luggage/groups."
+}

@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 180" role="img" aria-label="Groundwork – City Transport Intel">
+  <!--
+    Groundwork icon (themeable via CSS custom properties when inlined)
+    Standalone defaults match the standard palette.
+
+    Palette:
+      Navy   #2D3B54
+      Teal   #6BCBCC
+      Slate  #ABB7C6
+      White  #FFFFFF
+  -->
+
+  <!-- ===== STACKED MAP LAYERS ===== -->
+
+  <!-- Bottom layer (navy) -->
+  <path
+    d="M40 118
+       C36 114, 36 108, 40 104
+       L102 72  C108 69, 112 69, 118 72
+       L180 104 C184 108, 184 114, 180 118
+       L118 150 C112 153, 108 153, 102 150
+       Z"
+    fill="var(--gw-bot, #2D3B54)" stroke="var(--gw-stroke, #FFFFFF)" stroke-width="4"
+    paint-order="stroke fill" stroke-linejoin="round"/>
+
+  <!-- Middle layer (slate) -->
+  <path
+    d="M38 102
+       C34 98, 34 92, 38 88
+       L102 54  C108 51, 112 51, 118 54
+       L182 88  C186 92, 186 98, 182 102
+       L118 136 C112 139, 108 139, 102 136
+       Z"
+    fill="var(--gw-mid, #ABB7C6)" stroke="var(--gw-stroke, #FFFFFF)" stroke-width="4"
+    paint-order="stroke fill" stroke-linejoin="round"/>
+
+  <!-- Top layer (navy) -->
+  <path
+    d="M38 86
+       C34 82, 34 76, 38 72
+       L102 38  C108 35, 112 35, 118 38
+       L182 72  C186 76, 186 82, 182 86
+       L118 120 C112 123, 108 123, 102 120
+       Z"
+    fill="var(--gw-top, #2D3B54)" stroke="var(--gw-stroke, #FFFFFF)" stroke-width="4"
+    paint-order="stroke fill" stroke-linejoin="round"/>
+
+  <!-- ===== TRANSIT ROUTE (THE SMILE) ===== -->
+
+  <!-- Route line connecting two stop nodes -->
+  <path
+    d="M80 100 C96 116, 124 116, 140 100"
+    fill="none" stroke="var(--gw-route, #FFFFFF)" stroke-width="5"
+    stroke-linecap="round"/>
+
+  <!-- Left stop node -->
+  <circle cx="80"  cy="100" r="7"
+    fill="var(--gw-node-fill, #FFFFFF)" stroke="var(--gw-node-stroke, #C0C8D2)" stroke-width="2.5"/>
+
+  <!-- Right stop node -->
+  <circle cx="140" cy="100" r="7"
+    fill="var(--gw-node-fill, #FFFFFF)" stroke="var(--gw-node-stroke, #C0C8D2)" stroke-width="2.5"/>
+
+  <!-- ===== LOCATION PIN ===== -->
+
+  <!-- White outer ring -->
+  <path
+    d="M110 16
+       C94 16, 82 28, 82 44
+       C82 69, 110 94, 110 94
+       C110 94, 138 69, 138 44
+       C138 28, 126 16, 110 16 Z"
+    fill="var(--gw-pin-outer, #FFFFFF)"/>
+
+  <!-- Navy pin body -->
+  <path
+    d="M110 23
+       C99 23, 89 33, 89 45
+       C89 63, 110 82, 110 82
+       C110 82, 131 63, 131 45
+       C131 33, 121 23, 110 23 Z"
+    fill="var(--gw-pin-body, #2D3B54)"/>
+
+  <!-- Teal inner accent -->
+  <path
+    d="M110 31
+       C104 31, 98 37, 98 44
+       C98 55, 110 66, 110 66
+       C110 66, 122 55, 122 44
+       C122 37, 116 31, 110 31 Z"
+    fill="var(--gw-pin-accent, #6BCBCC)"/>
+
+  <!-- Pin centre dot -->
+  <circle cx="110" cy="43" r="5" fill="var(--gw-pin-body, #2D3B54)"/>
+
+</svg>

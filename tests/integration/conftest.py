@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -10,10 +11,25 @@ from sqlalchemy.orm import Session, sessionmaker
 os.environ.setdefault("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/groundwork_test")
 os.environ.setdefault("PERPLEXITY_API_KEY", "test-pplx-key")
 os.environ.setdefault("ADMIN_API_KEY", "test-key")
+os.environ.setdefault("VERIFY_GENERATED_URLS", "false")
 
 from app.db import get_db
 from app.main import app
 from app.models import City
+
+FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures"
+CITY_FIXTURE_FILES = {
+    ("barcelona", "spain"): "barcelona.json",
+    ("milan", "italy"): "milan.json",
+    ("new york city", "united states"): "new-york-city.json",
+    ("london", "united kingdom"): "london.json",
+    ("riga", "latvia"): "riga-latvia.json",
+}
+
+
+def _load_fixture_payload(filename: str) -> dict:
+    fixture_path = FIXTURES_DIR / filename
+    return json.loads(fixture_path.read_text())
 
 
 @pytest.fixture(scope="session")
@@ -78,8 +94,7 @@ def client(db_session):
 
 @pytest.fixture()
 def mock_perplexity_response(httpx_mock):
-    fixture_path = Path(__file__).resolve().parent.parent / "fixtures" / "barcelona.json"
-    payload = json.loads(fixture_path.read_text())
+    payload = _load_fixture_payload("barcelona.json")
 
     httpx_mock.add_response(
         method="POST",
@@ -90,9 +105,49 @@ def mock_perplexity_response(httpx_mock):
 
 
 @pytest.fixture()
+def mock_perplexity_response_by_city(httpx_mock):
+    payload_by_city = {
+        key: _load_fixture_payload(filename) for key, filename in CITY_FIXTURE_FILES.items()
+    }
+
+    def _callback(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content.decode("utf-8"))
+        messages = body.get("messages") or []
+        city_key = ("barcelona", "spain")
+
+        marker = "Generate transport intelligence JSON for "
+        for message in reversed(messages):
+            if message.get("role") != "user":
+                continue
+            content = str(message.get("content", ""))
+            if marker not in content:
+                continue
+
+            city_part = content.split(marker, 1)[1]
+            city_country = city_part.split(". Practical guidance", 1)[0]
+            if "," in city_country:
+                city_name, country = city_country.split(",", 1)
+                candidate = (city_name.strip().lower(), country.strip().lower())
+                if candidate in payload_by_city:
+                    city_key = candidate
+            break
+
+        payload = payload_by_city[city_key]
+        return httpx.Response(
+            status_code=200,
+            json={"choices": [{"message": {"content": json.dumps(payload)}}]},
+        )
+
+    httpx_mock.add_callback(
+        _callback,
+        method="POST",
+        url="https://api.perplexity.ai/chat/completions",
+    )
+
+
+@pytest.fixture()
 def sample_city(db_session):
-    fixture_path = Path(__file__).resolve().parent.parent / "fixtures" / "barcelona.json"
-    intel = json.loads(fixture_path.read_text())
+    intel = _load_fixture_payload("barcelona.json")
 
     city = City(
         slug="barcelona-es",

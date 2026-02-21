@@ -1,5 +1,7 @@
 # Groundwork by Potniq
 
+[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/D6cWZV8Ay28ELFRhwTUCno/HSujtgo1SQZFtF88eXY7qm/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/D6cWZV8Ay28ELFRhwTUCno/HSujtgo1SQZFtF88eXY7qm/tree/main)
+
 City transport intelligence for business travelers. You land in an unfamiliar city, Groundwork tells you what transport exists, how to pay, when it runs, and how to get from the airport.
 
 URL: `groundwork.potniq.com`
@@ -20,6 +22,8 @@ uv pip install -r requirements.txt
 export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/groundwork"
 export PERPLEXITY_API_KEY="your-key"
 export ADMIN_API_KEY="your-secret-admin-key"
+export VERIFY_GENERATED_URLS="true"
+export URL_VERIFICATION_TIMEOUT_SECONDS="8"
 uv run uvicorn app.main:app --reload --port 8000
 
 # Run tests
@@ -80,6 +84,7 @@ docker run -p 8000:8000 --env-file .env groundwork
 
 - If `slug` is omitted, it auto-generates as `slugify("{city_name}-{country_code}")`.
 - Perplexity is called synchronously; failed generation sets `status='failed'`.
+- Generated links are validated server-side; if invalid links are found, generation is retried once with corrective feedback.
 
 ### `POST /requests` payload
 

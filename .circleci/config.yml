@@ -1,25 +1,431 @@
 version: 2.1
-setup: true
+
+parameters:
+  run_workflow:
+    type: boolean
+    default: true
+  
+  nightly_build:
+    type: boolean
+    default: false
 
 orbs:
-  path-filtering: circleci/path-filtering@3.0.0
+  python: circleci/python@4.0.0
+  snyk: snyk/snyk@2.3.0
+
+jobs:
+  install-deps:
+    docker:
+      - image: cimg/python:3.13
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v3-python-user-local-{{ arch }}-{{ checksum "requirements.txt" }}
+      - run:
+          name: Configure user-site Python path
+          command: |
+            echo 'export PIP_USER=1' >> "$BASH_ENV"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
+      - python/install-packages:
+          pkg-manager: pip
+          pip-dependency-file: requirements.txt
+          cache-version: v3
+      - save_cache:
+          key: v3-python-user-local-{{ arch }}-{{ checksum "requirements.txt" }}
+          paths:
+            - /home/circleci/.local
+            - /home/circleci/.cache/pip
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - .local
+
+  test-unit:
+    docker:
+      - image: cimg/python:3.13
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /home/circleci
+      - run:
+          name: Configure user-site Python path
+          command: |
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
+      - run:
+          name: Run unit tests
+          command: |
+            mkdir -p test-results
+            python -m pytest -m unit tests/unit --junitxml=test-results/unit-results.xml
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+
+  test-integration:
+    docker:
+      - image: cimg/python:3.13
+        environment:
+          DATABASE_URL: postgresql://postgres@localhost:5432/groundwork_test
+          ADMIN_API_KEY: test-key
+          PERPLEXITY_API_KEY: test-key
+      - image: cimg/postgres:18.0
+        environment:
+          POSTGRES_DB: groundwork_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ""
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /home/circleci
+      - run:
+          name: Configure user-site Python path
+          command: |
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
+      - run:
+          name: Run migrations
+          command: |
+            chmod +x scripts/run_migrations.sh
+            ./scripts/run_migrations.sh
+      - run:
+          name: Run integration tests
+          command: |
+            mkdir -p test-results
+            python -m pytest -m integration tests/integration --junitxml=test-results/integration-results.xml
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+
+  scan-python-deps:
+    docker:
+      - image: cimg/python:3.13
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /home/circleci
+      - run:
+          name: Configure user-site Python path for Snyk
+          command: |
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
+            python --version
+            pip --version
+            pip show fastapi
+      - snyk/scan:
+          target-file: requirements.txt
+          severity-threshold: high
+          monitor-on-build: false
+
+  build-docker:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Build Docker image
+          command: |
+            docker build \
+              -t ${DOCKERHUB_REPO}:latest \
+              -t ${DOCKERHUB_REPO}:${CIRCLE_SHA1} \
+              .
+      - run:
+          name: Save Docker image to workspace
+          command: |
+            docker save -o /tmp/groundwork-api.tar ${DOCKERHUB_REPO}:latest ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - groundwork-api.tar
+
+  push-docker:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Load Docker image from workspace
+          command: |
+            docker load -i /tmp/groundwork-api.tar
+      - run:
+          name: Push Docker image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            docker push ${DOCKERHUB_REPO}:latest
+            docker push ${DOCKERHUB_REPO}:${CIRCLE_SHA1}
+
+  verify-docker:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /tmp
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Load Docker image from workspace
+          command: |
+            docker load -i /tmp/groundwork-api.tar
+      - run:
+          name: Start container and run API E2E smoke tests
+          command: |
+            set -euo pipefail
+
+            echo "Starting container for runtime verification..."
+
+            cleanup() {
+              docker logs groundwork-test >/dev/null 2>&1 && docker logs groundwork-test | tail -n 100 || true
+              docker logs groundwork-db >/dev/null 2>&1 && docker logs groundwork-db | tail -n 100 || true
+              docker stop groundwork-test >/dev/null 2>&1 || true
+              docker stop groundwork-db >/dev/null 2>&1 || true
+              docker network rm groundwork-net >/dev/null 2>&1 || true
+            }
+            trap cleanup EXIT
+
+            docker network create groundwork-net
+
+            docker run -d --name groundwork-db --network groundwork-net \
+              -e POSTGRES_DB=groundwork \
+              -e POSTGRES_USER=postgres \
+              -e POSTGRES_PASSWORD=postgres \
+              postgres:16
+
+            for i in $(seq 1 30); do
+              if docker exec groundwork-db pg_isready -U postgres -d groundwork >/dev/null 2>&1; then
+                echo "Postgres is ready after ${i}s."
+                break
+              fi
+
+              if [ "$i" -eq 30 ]; then
+                echo "Postgres did not become ready within timeout."
+                docker logs groundwork-db || true
+                docker stop groundwork-db >/dev/null 2>&1 || true
+                exit 1
+              fi
+
+              sleep 1
+            done
+
+            for migration in supabase/migrations/*.sql; do
+              echo "Applying migration ${migration}..."
+              docker exec -i groundwork-db psql -U postgres -d groundwork < "$migration"
+            done
+
+            docker run -d --name groundwork-test \
+              --network groundwork-net \
+              -e PORT=8080 \
+              -e DATABASE_URL=postgresql://postgres:postgres@groundwork-db:5432/groundwork \
+              -e PERPLEXITY_MOCK_RESPONSE_FILE=/app/tests/fixtures/barcelona.json \
+              -e PERPLEXITY_API_KEY=test_key \
+              -e ADMIN_API_KEY=test_key \
+              ${DOCKERHUB_REPO}:latest
+
+            for i in $(seq 1 30); do
+              if ! docker ps -q --filter "name=groundwork-test" | grep -q .; then
+                echo "Container exited before becoming healthy."
+                exit 1
+              fi
+
+              if docker exec groundwork-test python -c 'import urllib.request,sys;resp=urllib.request.urlopen("http://127.0.0.1:8080/health", timeout=2);sys.exit(0 if resp.status==200 else 1)' >/dev/null 2>&1; then
+                echo "Health endpoint returned HTTP 200 after ${i}s."
+                break
+              fi
+
+              echo "Waiting for app startup... ($i/30)"
+              if [ "$i" -eq 30 ]; then
+                echo "Health check did not pass within timeout."
+                exit 1
+              fi
+              sleep 1
+            done
+
+            echo "Running API E2E smoke tests..."
+            docker exec groundwork-test python /app/scripts/e2e_api_smoke.py
+
+  scan-docker-image:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Load Docker image from workspace
+          command: |
+            docker load -i /tmp/groundwork-api.tar
+      - snyk/scan:
+          docker-image-name: ${DOCKERHUB_REPO}:latest
+          severity-threshold: high
+          monitor-on-build: false
+
+  run-production-migrations:
+    docker:
+      - image: cimg/node:20.19
+    steps:
+      - checkout
+      - run:
+          name: Run Supabase production migrations
+          command: |
+            npx --yes supabase@latest --version
+            npx --yes supabase@latest db push --db-url "$SUPABASE_DB_URL" --include-all --yes
+
+  deploy-digitalocean:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Install doctl
+          command: |
+            cd ~
+            wget https://github.com/digitalocean/doctl/releases/download/v1.146.0/doctl-1.146.0-linux-amd64.tar.gz
+            tar xf doctl-1.146.0-linux-amd64.tar.gz
+            sudo mv doctl /usr/local/bin
+      - run:
+          name: Authenticate with DigitalOcean
+          command: |
+            doctl auth init --access-token "$DIGITALOCEAN_ACCESS_TOKEN"
+      
+      - run:
+          name: Plan a deploy
+          command: |
+            circleci run release plan \
+              --environment-name="prod" \
+              --component-name="groundwork-app" \
+              --target-version="${CIRCLE_SHA1}"
+      - run:
+          name: Trigger DigitalOcean App Platform deployment
+          command: |
+            doctl apps create-deployment "$DIGITALOCEAN_APP_ID" --wait
+      - run:
+          name: Update a deploy to SUCCESS
+          command: circleci run release update --status=SUCCESS 
+          when: on_success 
+      - run:
+          name: Update planned deploy to FAILED
+          command: circleci run release update --status=FAILED 
+          when: on_fail
+      
 
 workflows:
-  setup-workflow:
+  ci:
+    when: 
+      and: 
+        - << pipeline.parameters.run_workflow >>
+        - not: << pipeline.parameters.nightly_build >>
+      
     jobs:
-      - path-filtering/filter:
-          name: detect-changes
-          base-revision: main
-          config-path: .circleci/continue_config.yml
-          mapping: |
-            README\.md run_workflow false
-            docs/.* run_workflow false
-            .*\.md run_workflow false
-            app/.* run_workflow true
-            supabase/.* run_workflow true
-            tests/.* run_workflow true
-            scripts/.* run_workflow true
-            pytest\.ini run_workflow true
-            Dockerfile run_workflow true
-            requirements\.txt run_workflow true
-            \.circleci/.* run_workflow true
+      - install-deps
+      - test-unit:
+          requires:
+            - install-deps
+      - test-integration:
+          requires:
+            - install-deps
+      - scan-python-deps:
+          context:
+            - snyk
+          requires:
+            - install-deps
+      - build-docker:
+          context:
+            - groundwork_docker
+          requires:
+            - test-unit
+            - test-integration
+            - scan-python-deps
+          filters:
+            branches:
+              only: main
+      - scan-docker-image:
+          context:
+            - groundwork_docker
+            - snyk
+          requires:
+            - build-docker
+          filters:
+            branches:
+              only: main
+      - verify-docker:
+          context:
+            - groundwork_docker
+          requires:
+            - build-docker
+          filters:
+            branches:
+              only: main
+      - run-production-migrations:
+          context:
+            - groundwork_supabase
+          requires:
+            - verify-docker
+            - scan-docker-image
+          filters:
+            branches:
+              only: main
+      - push-docker:
+          context:
+            - groundwork_docker
+          requires:
+            - run-production-migrations
+          filters:
+            branches:
+              only: main
+      - deploy-digitalocean:
+          context:
+            - groundwork_digitalocean
+          requires:
+            - push-docker
+          filters:
+            branches:
+              only: main
+
+  nightly_build:
+    when: 
+      and: 
+        - << pipeline.parameters.nightly_build >>
+        - not: << pipeline.parameters.run_workflow >>
+    jobs:
+      - install-deps
+      - test-unit:
+          requires:
+            - install-deps
+      - test-integration:
+          requires:
+            - install-deps
+      - scan-python-deps:
+          context:
+            - snyk
+          requires:
+            - install-deps
+      - build-docker:
+          context:
+            - groundwork_docker
+          requires:
+            - test-unit
+            - test-integration
+            - scan-python-deps
+          filters:
+            branches:
+              only: main
+      - scan-docker-image:
+          context:
+            - groundwork_docker
+            - snyk
+          requires:
+            - build-docker
+      - verify-docker:
+          context:
+            - groundwork_docker
+          requires:
+            - build-docker
+
