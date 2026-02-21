@@ -10,7 +10,7 @@ workflows:
       - path-filtering/filter:
           name: detect-changes
           base-revision: main
-          config-path: .circleci/config.yml
+          config-path: .circleci/continue_config.yml
           mapping: |
             README\.md run_workflow false
             docs/.* run_workflow false
