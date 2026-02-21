@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 180" role="img" aria-label="Groundwork icon">
+  <defs>
+    <style>
+      :root {
+        /* Defaults (fallbacks) — override these via inline <style> in HTML */
+        --gw-navy-900: #1F2E45;
+        --gw-teal-600: #2E7C82;
+        --gw-slate-700: #4B5A6A;
+        --gw-slate-500: #8A97A6;
+        --gw-slate-300: #D3DAE2;
+        --gw-bg: #F5F4F1;
+
+        --gw-top: var(--gw-navy-900);
+        --gw-mid: var(--gw-slate-500);
+        --gw-bot: var(--gw-slate-700);
+        --gw-route: var(--gw-slate-500);
+        --gw-node: var(--gw-slate-700);
+        --gw-pin-outer: var(--gw-navy-900);
+        --gw-pin-inner: var(--gw-teal-600);
+      }
+    </style>
+  </defs>
+
+  <!-- LAYERS (stacked rounded lozenges) -->
+  <!-- Bottom -->
+  <path d="M50 108 L110 140 L170 108 L110 76 Z"
+        fill="var(--gw-bot)"/>
+  <!-- Middle -->
+  <path d="M50 92 L110 124 L170 92 L110 60 Z"
+        fill="var(--gw-mid)"/>
+  <!-- Top -->
+  <path d="M50 76 L110 108 L170 76 L110 44 Z"
+        fill="var(--gw-top)"/>
+
+  <!-- TRANSIT ROUTE (on middle layer) -->
+  <!-- Route line -->
+  <path d="M72 94 C88 106, 104 106, 120 94 S152 82, 168 94"
+        fill="none"
+        stroke="var(--gw-route)"
+        stroke-width="7"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Nodes (hollow) -->
+  <circle cx="72" cy="94" r="8" fill="none" stroke="var(--gw-node)" stroke-width="4"/>
+  <circle cx="120" cy="94" r="8" fill="none" stroke="var(--gw-node)" stroke-width="4"/>
+  <circle cx="168" cy="94" r="8" fill="none" stroke="var(--gw-node)" stroke-width="4"/>
+
+  <!-- PIN -->
+  <!-- Outer pin -->
+  <path d="M110 20
+           C92 20, 78 34, 78 52
+           C78 79, 110 106, 110 106
+           C110 106, 142 79, 142 52
+           C142 34, 128 20, 110 20 Z"
+        fill="var(--gw-pin-outer)"/>
+
+  <!-- Inner pin fill -->
+  <path d="M110 30
+           C98 30, 88 40, 88 52
+           C88 70, 110 88, 110 88
+           C110 88, 132 70, 132 52
+           C132 40, 122 30, 110 30 Z"
+        fill="var(--gw-pin-inner)"/>
+
+  <!-- Pin hole -->
+  <circle cx="110" cy="52" r="8" fill="var(--gw-top)"/>
+</svg>
