@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Groundwork favicon">
+  <defs>
+    <style>
+      :root {
+        --gw-navy-900: #1F2E45;
+        --gw-teal-600: #2E7C82;
+        --gw-route: #8A97A6;
+        --gw-bg: #F5F4F1;
+
+        --gw-top: var(--gw-navy-900);
+        --gw-pin-outer: var(--gw-navy-900);
+        --gw-pin-inner: var(--gw-teal-600);
+      }
+    </style>
+  </defs>
+
+  <!-- Background (optional, remove if transparent preferred) -->
+  <rect width="64" height="64" rx="14" fill="var(--gw-bg)"/>
+
+  <!-- Single map layer -->
+  <path d="M14 40 L32 50 L50 40 L32 30 Z"
+        fill="var(--gw-top)"/>
+
+  <!-- Simplified route -->
+  <path d="M18 40 C24 44, 40 44, 46 40"
+        fill="none"
+        stroke="var(--gw-route)"
+        stroke-width="3"
+        stroke-linecap="round"/>
+
+  <!-- Pin -->
+  <path d="M32 8
+           C24 8, 18 14, 18 22
+           C18 34, 32 46, 32 46
+           C32 46, 46 34, 46 22
+           C46 14, 40 8, 32 8 Z"
+        fill="var(--gw-pin-outer)"/>
+
+  <circle cx="32" cy="22" r="6" fill="var(--gw-pin-inner)"/>
+</svg>

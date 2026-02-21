@@ -3,9 +3,13 @@
 {% block title %}Groundwork | City Transport Intelligence{% endblock %}
 
 {% block content %}
-<section class="intro">
-    <h1>City transport intelligence for business travelers</h1>
-    <p>Search for a city to see transport options, payment methods, operating patterns, and airport connections.</p>
+<section class="landing-panel">
+    <div>
+        <p class="eyebrow">Reference-grade transit notes</p>
+        <h1>City transport intelligence for business travelers</h1>
+        <p class="subdued">Search for a city to see transport options, payment methods, operating patterns, and airport connections.</p>
+    </div>
+    <img class="landing-mark" src="/static/favicon.svg" alt="Groundwork mark">
 </section>
 
 <section class="search-panel">
@@ -17,30 +21,32 @@
 <section class="card-grid" id="city-grid">
     {% for city in cities %}
     <article class="city-card" data-search="{{ (city.city_name ~ ' ' ~ city.country)|lower }}">
-        <h2>
+        <h2 class="city-card-title">
             <a href="/{{ city.slug }}">{{ city.city_name }}, {{ city.country }}</a>
             <span class="flag">{{ city.flag }}</span>
         </h2>
         <ul class="facts">
-            <li><strong>Metro:</strong> {{ "Yes" if city.has_metro else "No" }}</li>
-            <li><strong>Contactless:</strong> {{ "Yes" if city.contactless else "No" }}</li>
-            <li><strong>Rideshare:</strong> {{ city.rideshare }}</li>
+            <li><span>Metro</span><strong>{{ "Yes" if city.has_metro else "No" }}</strong></li>
+            <li><span>Contactless</span><strong>{{ "Yes" if city.contactless else "No" }}</strong></li>
+            <li><span>Rideshare</span><strong>{{ city.rideshare }}</strong></li>
         </ul>
         <a class="card-link" href="/{{ city.slug }}">Open guide</a>
     </article>
     {% endfor %}
 </section>
-<p id="empty-filter" class="empty-state hidden">No matching cities found.</p>
+<p id="empty-filter" class="empty-state panel hidden">No matching cities found.</p>
 {% else %}
-<section class="empty-state">
+<section class="empty-state panel">
     <h2>No cities yet</h2>
     <p>Come back soon for city guides as we add them.</p>
 </section>
 {% endif %}
 
-<section class="request-city">
-    <h2>Can't find your city?</h2>
-    <p>Request a city and we'll review it for future coverage.</p>
+<section class="request-city panel">
+    <div class="request-copy">
+        <h2>Can't find your city?</h2>
+        <p>Request a city and we'll review it for future coverage.</p>
+    </div>
     <form id="city-request-form" class="request-form">
         <label for="request-raw-input">City name</label>
         <input id="request-raw-input" name="raw_input" type="text" required placeholder="e.g. Joburg or Portland Oregon">

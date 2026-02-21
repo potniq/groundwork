@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     PERPLEXITY_API_KEY: str
     PERPLEXITY_MOCK_RESPONSE_FILE: str | None = None
+    VERIFY_GENERATED_URLS: bool = True
+    URL_VERIFICATION_TIMEOUT_SECONDS: float = 8.0
     ADMIN_API_KEY: str
 
 

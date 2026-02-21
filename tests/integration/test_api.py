@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from sqlalchemy import select
 
@@ -36,6 +38,29 @@ def test_get_cities_with_data(client, sample_city):
     assert data[0]["slug"] == sample_city.slug
 
 
+def test_get_cities_sorted_by_last_updated(client, db_session, sample_city):
+    newer_city = City(
+        slug="maribor-si",
+        city_name="Maribor",
+        country="Slovenia",
+        country_code="SI",
+        latitude=46.5547,
+        longitude=15.6459,
+        status="ready",
+        intel=sample_city.intel,
+        raw_response=sample_city.raw_response,
+        retrieved_at=datetime.now(UTC) + timedelta(minutes=1),
+    )
+    db_session.add(newer_city)
+    db_session.commit()
+
+    response = client.get("/cities")
+    assert response.status_code == 200
+    data = response.json()
+    assert data[0]["slug"] == "maribor-si"
+    assert data[1]["slug"] == sample_city.slug
+
+
 def test_get_city_by_slug(client, sample_city):
     response = client.get(f"/cities/{sample_city.slug}")
     assert response.status_code == 200
@@ -60,6 +85,82 @@ def test_get_city_html(client, sample_city):
     assert "Open" in response.text
 
 
+def test_get_index_sorts_latest_first(client, db_session, sample_city):
+    newer_city = City(
+        slug="maribor-si",
+        city_name="Maribor",
+        country="Slovenia",
+        country_code="SI",
+        latitude=46.5547,
+        longitude=15.6459,
+        status="ready",
+        intel=sample_city.intel,
+        raw_response=sample_city.raw_response,
+        retrieved_at=datetime.now(UTC) + timedelta(minutes=1),
+    )
+    db_session.add(newer_city)
+    db_session.commit()
+
+    response = client.get("/")
+    assert response.status_code == 200
+    maribor_index = response.text.find("Maribor, Slovenia")
+    barcelona_index = response.text.find("Barcelona, Spain")
+    assert maribor_index != -1
+    assert barcelona_index != -1
+    assert maribor_index < barcelona_index
+
+
+def test_get_city_html_hides_apps_without_store_links(client, db_session):
+    city = City(
+        slug="noapp-city-xx",
+        city_name="NoApp City",
+        country="Nowhere",
+        country_code="XX",
+        latitude=None,
+        longitude=None,
+        status="ready",
+        intel={
+            "authorities": [
+                {
+                    "name": "NoApp Transit",
+                    "website": "https://example.com",
+                    "apps": [
+                        {
+                            "name": "Ghost App",
+                            "ios_url": None,
+                            "android_url": None,
+                        }
+                    ],
+                }
+            ],
+            "modes": [{"type": "bus", "operator": "NoApp Transit", "notes": "Daytime service"}],
+            "payment_methods": [{"method": "Cash", "details": "Pay on board", "url": None}],
+            "operating_hours": {"weekday": "06:00-22:00", "weekend": "08:00-20:00", "night_service": None},
+            "rideshare": [{"provider": "N/A", "available": False, "notes": "Not available"}],
+            "airport_connections": [
+                {
+                    "mode": "bus",
+                    "name": "Airport Shuttle",
+                    "duration": "25 min",
+                    "cost": "EUR 4.00",
+                    "info_url": "https://example.com/airport",
+                }
+            ],
+            "delay_info": [{"source": "Status", "url": "https://example.com/status"}],
+            "tips": "No app needed.",
+        },
+        raw_response="{}",
+    )
+    db_session.add(city)
+    db_session.commit()
+
+    response = client.get("/noapp-city-xx")
+    assert response.status_code == 200
+    assert "Ghost App" not in response.text
+    assert "iOS app" not in response.text
+    assert "Android app" not in response.text
+
+
 def test_create_city_success(client, mock_perplexity_response):
     response = client.post("/cities", headers={"X-API-Key": "test-key"}, json=_city_payload())
     assert response.status_code == 201
@@ -80,9 +181,39 @@ def test_create_city_custom_slug(client, mock_perplexity_response):
     assert response.json()["slug"] == "barca-custom"
 
 
-def test_create_city_duplicate(client, sample_city):
+def test_create_city_regenerates_existing_slug(client, db_session, sample_city, mock_perplexity_response):
+    response = client.post("/cities", headers={"X-API-Key": "test-key"}, json=_city_payload())
+    assert response.status_code == 201
+
+    data = response.json()
+    assert data["slug"] == sample_city.slug
+    assert data["status"] == "ready"
+    assert data["intel"] is not None
+
+    stored = db_session.scalar(select(City).where(City.slug == sample_city.slug))
+    assert stored is not None
+    assert stored.id == sample_city.id
+    assert stored.status == "ready"
+
+
+def test_create_city_conflict_when_generation_in_progress(client, db_session):
+    city = City(
+        slug="barcelona-es",
+        city_name="Barcelona",
+        country="Spain",
+        country_code="ES",
+        latitude=41.3874,
+        longitude=2.1686,
+        status="generating",
+        intel=None,
+        raw_response=None,
+    )
+    db_session.add(city)
+    db_session.commit()
+
     response = client.post("/cities", headers={"X-API-Key": "test-key"}, json=_city_payload())
     assert response.status_code == 409
+    assert response.json()["detail"] == "City is currently generating"
 
 
 def test_create_city_retries_failed_slug(client, db_session, mock_perplexity_response):

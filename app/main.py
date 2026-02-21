@@ -102,10 +102,10 @@ def create_city_profile(db: Session, payload: CreateCityRequest) -> City:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Slug cannot be empty")
 
     existing = db.scalar(select(City).where(City.slug == slug))
-    if existing and existing.status != "failed":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="City already exists")
+    if existing and existing.status == "generating":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="City is currently generating")
 
-    if existing and existing.status == "failed":
+    if existing:
         city = existing
         city.city_name = payload.city_name
         city.country = payload.country
@@ -158,14 +158,22 @@ def health() -> dict[str, str]:
 
 @app.get("/", response_class=HTMLResponse)
 def get_index(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
-    cities = db.scalars(select(City).where(City.status == "ready").order_by(City.city_name.asc())).all()
+    cities = db.scalars(
+        select(City)
+        .where(City.status == "ready")
+        .order_by(City.retrieved_at.desc(), City.city_name.asc())
+    ).all()
     cards = [build_city_card(city) for city in cities]
     return templates.TemplateResponse(request, "index.html", {"request": request, "cities": cards})
 
 
 @app.get("/cities", response_model=list[CityListItem])
 def get_cities(db: Session = Depends(get_db)) -> list[CityListItem]:
-    cities = db.scalars(select(City).where(City.status == "ready").order_by(City.city_name.asc())).all()
+    cities = db.scalars(
+        select(City)
+        .where(City.status == "ready")
+        .order_by(City.retrieved_at.desc(), City.city_name.asc())
+    ).all()
     return [to_city_list_item(city) for city in cities]
 
 

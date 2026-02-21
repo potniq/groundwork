@@ -20,6 +20,8 @@ uv pip install -r requirements.txt
 export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/groundwork"
 export PERPLEXITY_API_KEY="your-key"
 export ADMIN_API_KEY="your-secret-admin-key"
+export VERIFY_GENERATED_URLS="true"
+export URL_VERIFICATION_TIMEOUT_SECONDS="8"
 uv run uvicorn app.main:app --reload --port 8000
 
 # Run tests
@@ -80,6 +82,7 @@ docker run -p 8000:8000 --env-file .env groundwork
 
 - If `slug` is omitted, it auto-generates as `slugify("{city_name}-{country_code}")`.
 - Perplexity is called synchronously; failed generation sets `status='failed'`.
+- Generated links are validated server-side; if invalid links are found, generation is retried once with corrective feedback.
 
 ### `POST /requests` payload
 
