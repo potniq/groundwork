@@ -47,8 +47,8 @@
             <span class="flag">{{ city.flag }}</span>
         </h2>
         <ul class="facts">
-            <li><span>Metro</span><strong>{{ "Yes" if city.has_metro else "No" }}</strong></li>
-            <li><span>Contactless</span><strong>{{ "Yes" if city.contactless else "No" }}</strong></li>
+            <li><span>Metro</span><strong class="{{ 'yes' if city.has_metro else 'no' }}">{{ ("&#10003;" if city.has_metro else "&#10005;")|safe }}</strong></li>
+            <li><span>Contactless</span><strong class="{{ 'yes' if city.contactless else 'no' }}">{{ ("&#10003;" if city.contactless else "&#10005;")|safe }}</strong></li>
             <li><span>Rideshare</span><strong>{{ city.rideshare }}</strong></li>
         </ul>
         <a class="card-link" href="/{{ city.slug }}">Open guide</a>
