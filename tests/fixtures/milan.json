@@ -1,0 +1,102 @@
+{
+  "authorities": [
+    {
+      "name": "Azienda Trasporti Milanesi (ATM)",
+      "website": "https://www.atm.it/EN/Pages/default.aspx",
+      "app": null,
+      "apps": [
+        {
+          "name": "ATM Milano Official",
+          "ios_url": "https://apps.apple.com/it/app/atm-milano-ufficiale/id434768376",
+          "android_url": "https://play.google.com/store/apps/details?id=it.atm.mobile"
+        }
+      ]
+    }
+  ],
+  "modes": [
+    {
+      "type": "metro",
+      "operator": "ATM",
+      "notes": "5 lines (M1 red, M2 green, M3 yellow, M4 blue to Linate, M5 lilac); fastest intra-city option; runs 6am-1am."
+    },
+    {
+      "type": "tram",
+      "operator": "ATM",
+      "notes": "Historic lines like 2,4,14,16 pass Duomo; night service available."
+    },
+    {
+      "type": "bus",
+      "operator": "ATM",
+      "notes": "80+ routes including night buses replacing metro; validate tickets on board."
+    },
+    {
+      "type": "train",
+      "operator": "Trenord / Trenitalia",
+      "notes": "S-lines suburban rail integrated with ATM tickets (Mi1-Mi3 zones); high-speed from Milano Centrale."
+    },
+    {
+      "type": "other",
+      "operator": "BikeMi",
+      "notes": "Bike-sharing with app; daily €2.50, stations city-wide."
+    }
+  ],
+  "payment_methods": [
+    {
+      "method": "Single ticket",
+      "details": "€2.20 for 90min on metro/bus/tram/S-lines Mi1-Mi3",
+      "url": null
+    },
+    {
+      "method": "Daily pass",
+      "details": "€7.60 unlimited Mi1-Mi3",
+      "url": "https://www.atm.it/EN/VIAGGIACONNOI/BIGLIETTI/Pages/Tickettypesprices.aspx"
+    },
+    {
+      "method": "Contactless",
+      "details": "Credit/debit card, phone/watch on ATM services; auto-calculates fare",
+      "url": "https://www.atm.it/EN/VIAGGIACONNOI/BIGLIETTI/Pages/Contactless.aspx"
+    }
+  ],
+  "operating_hours": {
+    "weekday": "Metro 6am-1am; buses/trams vary, frequent daytime",
+    "weekend": "Similar to weekday, some extended",
+    "night_service": "Night buses follow metro routes after 1am; Mi1-Mi3 ticket valid"
+  },
+  "rideshare": [
+    {
+      "provider": "Free Now / itTaxi",
+      "available": true,
+      "notes": "App-based taxis; flat airport rates ~€100; Uber available but limited"
+    }
+  ],
+  "airport_connections": [
+    {
+      "mode": "train",
+      "name": "Malpensa Express (MXP)",
+      "duration": "50min to Centrale",
+      "cost": "€13 one-way",
+      "info_url": "https://www.malpensaexpress.it/en/"
+    },
+    {
+      "mode": "metro",
+      "name": "M4 to Linate (LIN)",
+      "duration": "~20min",
+      "cost": "€2.20 standard ticket",
+      "info_url": null
+    },
+    {
+      "mode": "shuttle bus",
+      "name": "Orio Shuttle (BGY)",
+      "duration": "~60min",
+      "cost": "€5-10",
+      "info_url": null
+    }
+  ],
+  "delay_info": [
+    {
+      "source": "ATM Milano Official",
+      "url": "https://www.atm.it/EN/VIAGGIACONNOI/Pagine/StatoDellaRete.aspx"
+    }
+  ],
+  "tips": "Buy multi-day passes via ATM app for 2-5 days; validate all paper tickets immediately; use contactless for ease; Mi1-Mi3 covers metro area + S-trains; avoid rush hour (7-9am, 5-7pm); bikes free on metro; check ATM app for real-time."
+}

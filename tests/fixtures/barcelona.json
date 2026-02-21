@@ -1,115 +1,152 @@
 {
   "authorities": [
     {
-      "name": "Transports Metropolitans de Barcelona",
-      "website": "https://www.tmb.cat/",
+      "name": "TMB (Transports Metropolitans de Barcelona)",
+      "website": "https://www.tmb.cat/en/home",
+      "app": null,
       "apps": [
         {
-          "name": "TMB App",
-          "ios_url": "https://apps.apple.com/es/app/tmb-app/id417318080",
-          "android_url": "https://play.google.com/store/apps/details?id=com.geomobile.tmbmobile"
+          "name": "TMB",
+          "ios_url": "https://apps.apple.com/es/app/tmb/id314499734",
+          "android_url": "https://play.google.com/store/apps/details?id=cat.tmb.android"
         }
       ]
     },
     {
-      "name": "Autoritat del Transport Metropolita",
-      "website": "https://www.atm.cat/",
-      "apps": []
+      "name": "FGC (Ferrocarrils de la Generalitat de Catalunya)",
+      "website": "https://www.fgc.cat/en",
+      "app": null,
+      "apps": [
+        {
+          "name": "FGC",
+          "ios_url": "https://apps.apple.com/es/app/fgc/id1445127675",
+          "android_url": "https://play.google.com/store/apps/details?id=cat.fgc.fgcmobile"
+        }
+      ]
+    },
+    {
+      "name": "Renfe Cercanías (Rodalies de Barcelona)",
+      "website": "https://www.renfe.com/es/en",
+      "app": null,
+      "apps": [
+        {
+          "name": "Renfe",
+          "ios_url": "https://apps.apple.com/es/app/renfe/id413841987",
+          "android_url": "https://play.google.com/store/apps/details?id=com.renfe.mobile"
+        }
+      ]
     }
   ],
   "modes": [
     {
       "type": "metro",
       "operator": "TMB",
-      "notes": "Primary high-frequency urban network with integrated fares."
+      "notes": "12 lines covering city and suburbs. Lines L1-L5, L9, L10, L11. Trains run every 2-4 minutes during peak times."
     },
     {
       "type": "bus",
       "operator": "TMB",
-      "notes": "Comprehensive bus network including night buses."
-    },
-    {
-      "type": "train",
-      "operator": "Rodalies de Catalunya",
-      "notes": "Regional rail useful for airport and suburban destinations."
+      "notes": "Over 1,000 buses on 230+ day routes plus 30 night routes. Day buses run 5:30am-10:30pm; night buses (N prefix) run 10:30pm-5:30am."
     },
     {
       "type": "tram",
-      "operator": "TRAM",
-      "notes": "Serves key corridors outside central core."
+      "operator": "TMB",
+      "notes": "6 lines across 2 networks serving outer city areas. Complements metro network with transfer points."
+    },
+    {
+      "type": "light_rail",
+      "operator": "FGC",
+      "notes": "Commuter rail and metro lines serving suburban areas. Llobregat–Anoia and Vallès lines connect Sant Cugat and Terrassa."
+    },
+    {
+      "type": "train",
+      "operator": "Renfe Cercanías",
+      "notes": "12 Rodalies lines (R1-R11, R8) serving broader metropolitan area. Connects Barcelona to Sitges, Mataró, Vic and surrounding regions."
+    },
+    {
+      "type": "cable_car",
+      "operator": "TMB",
+      "notes": "Cable cars and funiculars available, including routes to Montjuïc."
     }
   ],
   "payment_methods": [
     {
-      "method": "T-mobilitat card",
-      "details": "Reloadable integrated transit card valid across metro, bus, tram, and regional rail zones.",
-      "url": "https://www.t-mobilitat.cat/web/t-mobilitat/"
-    },
-    {
-      "method": "Contactless bank card",
-      "details": "Accepted for many tickets and top-ups at station machines.",
+      "method": "T-casual ticket",
+      "details": "Single journey ticket valid on metro, bus, tram, FGC and Renfe (Zone 1). €2.40 per journey.",
       "url": null
     },
     {
-      "method": "Mobile tickets",
-      "details": "Available via operator apps for selected products.",
-      "url": "https://www.tmb.cat/en/customer-services/user-guide/app"
+      "method": "T-10 ticket",
+      "details": "10 journeys on integrated transport (metro, bus, tram, FGC, Renfe Zone 1). Shareable between passengers.",
+      "url": null
+    },
+    {
+      "method": "Hola Barcelona Travel Card",
+      "details": "Unlimited travel for 2-5 consecutive days on metro, buses, trams, FGC, Renfe, and airport transfers.",
+      "url": "https://www.holabarcelona.com"
+    },
+    {
+      "method": "Contactless payment",
+      "details": "Credit/debit cards accepted at metro and bus validators. Tap-to-pay available on most transport modes.",
+      "url": null
     }
   ],
   "operating_hours": {
-    "weekday": "Metro generally runs 05:00-00:00 Monday-Thursday; extended Friday.",
-    "weekend": "Saturday often runs overnight; Sunday until around midnight.",
-    "night_service": "NitBus covers overnight gaps with key routes."
+    "weekday": "Metro: 5am-midnight Monday-Thursday. Buses: 5:30am-10:30pm day service. FGC and Renfe: 5am-11pm approximately.",
+    "weekend": "Metro: Friday-Saturday extended to 1am; Sunday until midnight. Buses: 5:30am-10:30pm day service. Night buses available.",
+    "night_service": "Night buses (N lines) operate 10:30pm-5:30am. Metro runs 24/7 on Saturdays. Aerobús operates 24/7, 365 days/year."
   },
   "rideshare": [
     {
       "provider": "Uber",
       "available": true,
-      "notes": "Available in the metro area, with varying wait times by district."
+      "notes": "Available in Barcelona metropolitan area."
     },
     {
-      "provider": "Cabify",
+      "provider": "Bolt",
       "available": true,
-      "notes": "Strong local presence, often used for business travel."
+      "notes": "Ride-hailing service operating in Barcelona."
     },
     {
-      "provider": "Free Now",
+      "provider": "Bike-sharing",
       "available": true,
-      "notes": "Taxi-hailing app commonly used in central areas."
+      "notes": "Fantastic bike-sharing network available throughout city."
+    },
+    {
+      "provider": "Electric scooters",
+      "available": true,
+      "notes": "E-scooter rental available for short trips."
     }
   ],
   "airport_connections": [
     {
       "mode": "metro",
-      "name": "L9 Sud",
-      "duration": "30-40 min to central interchanges",
-      "cost": "EUR 5.50 airport ticket",
-      "info_url": "https://www.tmb.cat/en/barcelona/metro/lines/l9-sud"
-    },
-    {
-      "mode": "train",
-      "name": "R2 Nord",
-      "duration": "25-35 min to city center stations",
-      "cost": "EUR 4.90 single (zone-dependent products available)",
-      "info_url": "https://rodalies.gencat.cat/en/horaris/"
+      "name": "L9 Sud + L3 transfer",
+      "duration": "35-40 minutes to city center",
+      "cost": "€5.15 (T-10 ticket) or €2.40 (single)",
+      "info_url": "https://www.tmb.cat/en/home"
     },
     {
       "mode": "bus",
-      "name": "Aerobus",
-      "duration": "35-45 min to Placa de Catalunya",
-      "cost": "EUR 6.75 one-way",
-      "info_url": "https://aerobusbarcelona.es/"
+      "name": "Aerobús",
+      "duration": "35 minutes to Plaça Catalunya",
+      "cost": "€6.15 one-way",
+      "info_url": "https://www.aerobusbcn.com"
     }
   ],
   "delay_info": [
     {
-      "source": "TMB service status",
-      "url": "https://www.tmb.cat/en/barcelona/journey-planner"
+      "source": "TMB Real-time Traffic",
+      "url": "https://www.tmb.cat/en/home"
     },
     {
-      "source": "Rodalies incidents",
-      "url": "https://rodalies.gencat.cat/en/inici/"
+      "source": "FGC Service Status",
+      "url": "https://www.fgc.cat/en"
+    },
+    {
+      "source": "Renfe Alerts",
+      "url": "https://www.renfe.com/es/en"
     }
   ],
-  "tips": "For 2-5 day business trips, buy a T-casual or suitable T-mobilitat product on arrival, use Aerobus if your hotel is near Placa de Catalunya, and check late-night options in advance as modal coverage changes after midnight."
+  "tips": "Use integrated T-10 ticket or Hola Barcelona card for seamless transfers across metro, bus, tram, FGC and Renfe within Zone 1. Metro is fastest and cheapest option; stations at major attractions. Download TMB app for real-time schedules and route planning. Night buses (N prefix) available if traveling after 10:30pm. Validate ticket at entry; transfers allowed within time/zone limits. Business travelers should consider 2-5 day Hola Barcelona card for unlimited airport and city travel. Metro runs 24/7 on Saturdays; plan accordingly for weekend travel."
 }

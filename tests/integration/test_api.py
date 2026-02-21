@@ -18,6 +18,16 @@ def _city_payload() -> dict:
     }
 
 
+def _city_payload_for(city_name: str, country: str, country_code: str, latitude: float, longitude: float) -> dict:
+    return {
+        "city_name": city_name,
+        "country": country,
+        "country_code": country_code,
+        "latitude": latitude,
+        "longitude": longitude,
+    }
+
+
 def test_health(client):
     response = client.get("/health")
     assert response.status_code == 200
@@ -79,8 +89,8 @@ def test_get_city_html(client, sample_city):
     assert response.status_code == 200
     assert "Barcelona" in response.text
     assert "Transport Authorities" in response.text
-    assert "iOS app" in response.text
-    assert "Android app" in response.text
+    assert ">iOS<" in response.text
+    assert ">Android<" in response.text
     assert "Airport info" in response.text
     assert "Open" in response.text
 
@@ -157,8 +167,8 @@ def test_get_city_html_hides_apps_without_store_links(client, db_session):
     response = client.get("/noapp-city-xx")
     assert response.status_code == 200
     assert "Ghost App" not in response.text
-    assert "iOS app" not in response.text
-    assert "Android app" not in response.text
+    assert ">iOS<" not in response.text
+    assert ">Android<" not in response.text
 
 
 def test_create_city_success(client, mock_perplexity_response):
@@ -167,6 +177,27 @@ def test_create_city_success(client, mock_perplexity_response):
 
     data = response.json()
     assert data["slug"] == "barcelona-es"
+    assert data["status"] == "ready"
+    assert data["intel"] is not None
+    assert data["intel"]["authorities"]
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected_slug"),
+    [
+        (_city_payload_for("Barcelona", "Spain", "ES", 41.3874, 2.1686), "barcelona-es"),
+        (_city_payload_for("Milan", "Italy", "IT", 45.4642, 9.19), "milan-it"),
+        (_city_payload_for("New York City", "United States", "US", 40.7128, -74.006), "new-york-city-us"),
+        (_city_payload_for("London", "United Kingdom", "GB", 51.5072, -0.1276), "london-gb"),
+        (_city_payload_for("Riga", "Latvia", "LV", 56.9496, 24.1052), "riga-lv"),
+    ],
+)
+def test_create_city_success_for_fixture_city_payloads(client, mock_perplexity_response_by_city, payload, expected_slug):
+    response = client.post("/cities", headers={"X-API-Key": "test-key"}, json=payload)
+    assert response.status_code == 201
+
+    data = response.json()
+    assert data["slug"] == expected_slug
     assert data["status"] == "ready"
     assert data["intel"] is not None
     assert data["intel"]["authorities"]

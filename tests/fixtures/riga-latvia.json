@@ -1,0 +1,103 @@
+{
+  "authorities": [
+    {
+      "name": "Rīgas satiksme",
+      "website": "https://www.rigassatiksme.lv/en/",
+      "app": null,
+      "apps": [
+        {
+          "name": "Rīgas Satiksme",
+          "ios_url": "https://apps.apple.com/app/rigas-satiksme/id1067012218",
+          "android_url": "https://play.google.com/store/apps/details?id=lv.rigassatiksme"
+        },
+        {
+          "name": "Mobilly",
+          "ios_url": "https://apps.apple.com/app/mobilly/id1461424822",
+          "android_url": "https://play.google.com/store/apps/details?id=lv.mobilly"
+        },
+        {
+          "name": "Trafi",
+          "ios_url": "https://apps.apple.com/app/trafi/id534131844",
+          "android_url": "https://play.google.com/store/apps/details?id=com.trafi.android"
+        }
+      ]
+    }
+  ],
+  "modes": [
+    {
+      "type": "tram",
+      "operator": "Rīgas satiksme",
+      "notes": "6 tram routes serving the city. Tram line 1 carries the largest passenger volume."
+    },
+    {
+      "type": "bus",
+      "operator": "Rīgas satiksme",
+      "notes": "52 bus routes including route 22 to/from Riga International Airport (€1.81, accepts bank card payment from driver)"
+    },
+    {
+      "type": "other",
+      "operator": "Rīgas satiksme",
+      "notes": "22 trolleybus routes providing comprehensive coverage"
+    }
+  ],
+  "payment_methods": [
+    {
+      "method": "90-minute ticket",
+      "details": "€1.50. Valid for 90 minutes with transfers between tram, trolleybus, and bus. Must be registered each time boarding a new vehicle.",
+      "url": null
+    },
+    {
+      "method": "24-hour ticket",
+      "details": "€5.00. Unlimited travel on all public transport for 24 hours.",
+      "url": null
+    },
+    {
+      "method": "3-day ticket",
+      "details": "€8.00. Recommended for 2-5 day business travelers.",
+      "url": null
+    },
+    {
+      "method": "5-day ticket",
+      "details": "€10.00. Recommended for 2-5 day business travelers.",
+      "url": null
+    },
+    {
+      "method": "1-month ticket",
+      "details": "€30.00",
+      "url": null
+    },
+    {
+      "method": "E-ticket card",
+      "details": "Reloadable card purchased at vendors or online. Can be topped up at kiosks or through online recharge.",
+      "url": "https://www.rigassatiksme.lv/en/"
+    }
+  ],
+  "operating_hours": {
+    "weekday": "5:30 AM to 11:30 PM",
+    "weekend": "5:30 AM to 11:30 PM",
+    "night_service": "Summer season weekends and public holidays: three dedicated night bus routes (N1, N4, N6) operate hourly from midnight to 4:00 AM from city centre"
+  },
+  "rideshare": [
+    {
+      "provider": "Bolt",
+      "available": true,
+      "notes": "Mobile app available for taxi and private driver requests. Pre-ordering recommended for better fares."
+    }
+  ],
+  "airport_connections": [
+    {
+      "mode": "bus",
+      "name": "Bus Route 22",
+      "duration": "Not specified in sources",
+      "cost": "€1.81",
+      "info_url": "https://www.rigassatiksme.lv/en/for-riga-guests/public-transport-in-riga/"
+    }
+  ],
+  "delay_info": [
+    {
+      "source": "Rīgas satiksme official website",
+      "url": "https://www.rigassatiksme.lv/en/"
+    }
+  ],
+  "tips": "Purchase a 3-day or 5-day ticket for optimal value during a 2-5 day stay. All tickets must be registered each time you board a different vehicle. Tickets available at vending machines, Narvesen kiosks, Rīgas satiksme customer service centres, and mobile apps. Penalty for invalid ticket: €15-€30. Download Rīgas Satiksme or Trafi app for offline route planning and real-time schedules. Note: Official website may be inaccessible from non-EU servers due to cyber-attack protections."
+}

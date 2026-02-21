@@ -1,0 +1,153 @@
+{
+  "authorities": [
+    {
+      "name": "Metropolitan Transportation Authority (MTA)",
+      "website": "https://www.mta.info",
+      "app": null,
+      "apps": [
+        {
+          "name": "MTA",
+          "ios_url": "https://apps.apple.com/us/app/mta/id1070975499",
+          "android_url": "https://play.google.com/store/apps/details?id=com.apple.mta"
+        },
+        {
+          "name": "CityMapper",
+          "ios_url": "https://apps.apple.com/us/app/citymapper-live-transit/id469643528",
+          "android_url": "https://play.google.com/store/apps/details?id=com.citymapper.app.release"
+        }
+      ]
+    },
+    {
+      "name": "NYC Department of Transportation",
+      "website": "https://www.nyc.gov/html/dot",
+      "app": null,
+      "apps": []
+    }
+  ],
+  "modes": [
+    {
+      "type": "metro",
+      "operator": "MTA",
+      "notes": "Subway system operates 24/7, covers Manhattan and all boroughs. Flat fare of $2.75 per ride. Most reliable and cost-effective option for business travelers. Plan for approximately 1 hour of potential delays."
+    },
+    {
+      "type": "bus",
+      "operator": "MTA",
+      "notes": "Extensive network covering areas not served by subway. Slower than subway due to traffic but offers city views. Uses same MetroCard payment as subway."
+    },
+    {
+      "type": "ferry",
+      "operator": "NYC Ferry Services",
+      "notes": "Scenic waterfront routes offering views of city skyline and landmarks. Practical for specific waterfront destinations."
+    },
+    {
+      "type": "train",
+      "operator": "Long Island Rail Road (LIRR)",
+      "notes": "Commuter rail connecting to suburban areas and airport connections via AirTrain."
+    },
+    {
+      "type": "train",
+      "operator": "Metro-North Railroad",
+      "notes": "Regional rail service connecting to areas north of NYC."
+    },
+    {
+      "type": "train",
+      "operator": "Amtrak",
+      "notes": "National passenger railroad service connecting major US cities to Penn Station in Midtown Manhattan."
+    }
+  ],
+  "payment_methods": [
+    {
+      "method": "OMNY Contactless Payment",
+      "details": "Tap contactless card or phone at turnstile for subway and bus access. Modern payment option accepted on all MTA services.",
+      "url": "https://www.omny.info"
+    },
+    {
+      "method": "MetroCard",
+      "details": "Reloadable card purchased at station kiosks or shops. Flat rate of $2.75 per ride for subway and bus.",
+      "url": "https://www.mta.info/fares"
+    },
+    {
+      "method": "Single-Ride Ticket",
+      "details": "Paper ticket for one journey on subway or bus.",
+      "url": null
+    }
+  ],
+  "operating_hours": {
+    "weekday": "Subway operates 24/7. Most lines run frequently 5am-midnight, with reduced service midnight-5am. Buses operate 5am-1am with limited night routes.",
+    "weekend": "Subway operates 24/7 with modified schedules. Buses operate 5am-1am with limited night routes.",
+    "night_service": "24/7 subway service available. Select bus routes operate overnight. Plan extra time for late-night travel."
+  },
+  "rideshare": [
+    {
+      "provider": "Uber",
+      "available": true,
+      "notes": "Widely available throughout NYC. Approximately $60 from JFK to Manhattan. Convenient for luggage-heavy airport transfers but expect gridlock during peak hours (8-10am, 4-7pm)."
+    },
+    {
+      "provider": "Lyft",
+      "available": true,
+      "notes": "App-based rideshare service available across five boroughs. Door-to-door convenience but expensive for frequent use."
+    },
+    {
+      "provider": "Yellow Taxi",
+      "available": true,
+      "notes": "Traditional cabs available for street hailing or designated taxi stands. Convenient but subject to Midtown and Downtown gridlock."
+    }
+  ],
+  "airport_connections": [
+    {
+      "mode": "AirTrain + Subway",
+      "name": "JFK Airport to Manhattan",
+      "duration": "45-60 minutes to Midtown",
+      "cost": "$7.50 AirTrain + $2.75 subway",
+      "info_url": "https://www.airtrain.com"
+    },
+    {
+      "mode": "AirTrain + LIRR",
+      "name": "JFK Airport to Penn Station",
+      "duration": "30-40 minutes",
+      "cost": "$7.50 AirTrain + LIRR fare",
+      "info_url": "https://www.airtrain.com"
+    },
+    {
+      "mode": "Rideshare",
+      "name": "JFK to Manhattan",
+      "duration": "45-90 minutes depending on traffic",
+      "cost": "Approximately $60 via Uber",
+      "info_url": null
+    },
+    {
+      "mode": "Taxi",
+      "name": "JFK to Manhattan",
+      "duration": "45-90 minutes depending on traffic",
+      "cost": "Metered fare plus tolls",
+      "info_url": null
+    },
+    {
+      "mode": "AirTrain + Subway",
+      "name": "Newark Airport to Manhattan",
+      "duration": "45-60 minutes to Midtown",
+      "cost": "$7.50 AirTrain + $2.75 subway",
+      "info_url": "https://www.airtrain.com"
+    },
+    {
+      "mode": "Subway/Bus",
+      "name": "LaGuardia Airport to Manhattan",
+      "duration": "30-45 minutes",
+      "cost": "$2.75 via MTA bus or subway",
+      "info_url": null
+    }
+  ],
+  "delay_info": [
+    {
+      "source": "MTA Service Status",
+      "url": "https://www.mta.info/status"
+    },
+    {
+      "source": "MTA Alerts",
+      "url": "https://www.mta.info/alerts"
+    }
+  ],
+  "tips": "For business travelers: (1) Plan commute with 1-hour buffer for potential subway delays; arrive 10-15 minutes early to meetings. (2) Subway is fastest and most reliable during peak hours (8-10am, 4-7pm) when traffic gridlocks taxis and rideshares. (3) Use OMNY contactless payment or MetroCard for seamless transit. (4) For airport arrival with luggage, consider AirTrain + subway ($10.25 total) over Uber ($60) to save costs. (5) Key business districts: Midtown (offices, conference centers, Grand Central/Penn Station), Financial District (Wall Street, WTC), Chelsea (creative vibe, Penn Station access). (6) Walking is often faster for short distances. (7) Avoid relying on taxis/rideshares due to cost and traffic; use subway for efficiency. (8) Download CityMapper app for real-time transit planning and commute tracking."
+}
