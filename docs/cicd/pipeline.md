@@ -1,7 +1,7 @@
 # Groundwork: A Reference CircleCI Pipeline
 
 **Repository:** [github.com/potniq/groundwork](https://github.com/potniq/groundwork)
-**Passing build (full main pipeline):** [View on CircleCI](https://app.circleci.com/workflow/e49a8957-1567-4fe7-98a4-ced1f54db59b)
+**Passing build (full main pipeline):** [View on CircleCI](https://app.circleci.com/pipelines/circleci/D6cWZV8Ay28ELFRhwTUCno/HSujtgo1SQZFtF88eXY7qm/99/workflows/4581382b-c9ed-42c7-b99a-06562cd57f78)
 
 
 ## High level overview
