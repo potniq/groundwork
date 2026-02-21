@@ -134,6 +134,7 @@ jobs:
       - run:
           name: Build Docker image
           command: |
+            REPO=${DOCKERHUB_REPO:-groundwork-api}
             docker build \
               -t << pipeline.parameters.docker_repo >>:latest \
               -t << pipeline.parameters.docker_repo >>:${CIRCLE_SHA1} \
@@ -162,6 +163,7 @@ jobs:
       - run:
           name: Push Docker image to Docker Hub
           command: |
+            REPO=${DOCKERHUB_REPO:-groundwork-api}
             echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             docker push << pipeline.parameters.docker_repo >>:latest
             docker push << pipeline.parameters.docker_repo >>:${CIRCLE_SHA1}
@@ -224,6 +226,7 @@ jobs:
               docker exec -i groundwork-db psql -U postgres -d groundwork < "$migration"
             done
 
+            REPO=${DOCKERHUB_REPO:-groundwork-api}
             docker run -d --name groundwork-test \
               --network groundwork-net \
               -e PORT=8080 \
@@ -258,6 +261,8 @@ jobs:
   scan-docker-image:
     docker:
       - image: cimg/base:stable
+    environment:
+      DOCKERHUB_REPO_DEFAULT: groundwork-api
     steps:
       - attach_workspace:
           at: /tmp
