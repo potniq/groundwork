@@ -134,3 +134,13 @@ The `deploy-digitalocean` job:
 4. Updates the release status to `SUCCESS` or `FAILED` based on the outcome
 
 This surfaces deployment history in CircleCI's releases view and makes rollbacks traceable.
+
+
+## Future optimizations
+
+Several enhancements could build on this foundation as the project and team grow:
+
+- **OIDC authentication for cloud deployments** — the pipeline currently authenticates with DigitalOcean using a long-lived API token stored in a context. For cloud providers that support it (such as AWS, GCP, and Azure), CircleCI's [OIDC token support](https://circleci.com/docs/openid-connect-tokens/) would allow jobs to assume short-lived credentials at runtime, eliminating stored secrets entirely. DigitalOcean App Platform does not currently support OIDC-authenticated deployments, but this would be the preferred approach for any AWS or GCP workloads.
+- **Multi-environment promotion with gating** — the pipeline currently deploys directly to production from `main`. A natural next step would be introducing staging and development environments with gated promotion between them — deploying automatically to a staging environment on merge, running post-deploy verification there, and requiring a manual approval step before promoting to production. CircleCI's [approval jobs](https://circleci.com/docs/workflows/#holding-a-workflow-for-a-manual-approval) support this pattern natively.
+- **Test parallelism and sharding** — as the test suite grows, CircleCI's [test splitting](https://circleci.com/docs/parallelism-faster-jobs/) can distribute tests across multiple containers based on timing data, keeping feedback times manageable.
+- **Config policies** — [CircleCI config policies](https://circleci.com/docs/config-policy-management-overview/) could enforce pipeline governance standards (e.g., requiring security scans, restricting deployment contexts) across an organization's projects.
