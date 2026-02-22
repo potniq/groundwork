@@ -52,6 +52,17 @@ The pipeline uses two mechanisms to control what runs and when.
 
 This avoids burning CI minutes on documentation-only commits.
 
+#### Caveats of the setup config approach
+
+While powerful, especially in monorepo setups, splitting a pipeline dynamically presents additional complexity for a team. There are several tradeoffs to consider:
+
+- **Harder to debug** — with two config files (`setup-config.yml` and `config.yml`), tracing why a pipeline did or didn't run requires understanding both stages. A failed path-filter evaluation can silently skip the entire pipeline, which is confusing if you expected it to run.
+- **Local validation gaps** — you can't easily test path-filtering logic locally. The `circleci config validate` command checks syntax but doesn't simulate which paths would match a given commit. You're relying on CI itself to verify the filtering behaviour.
+- **Mapping order matters** — the `path-filtering` orb evaluates rules top-to-bottom and last match wins. If a commit touches both `docs/README.md` and `app/main.py`, the final parameter value depends on rule ordering. Getting this wrong can skip builds that should have run.
+- **First-push edge cases** — when a new branch is pushed for the first time, the `base-revision` diff against `main` includes all divergent commits, not just the latest push. This is usually fine but can produce unexpected results if the branch has a long history.
+
+Sometimes, a more straightforward single-config pipeline — one that always runs and relies on branch filters or job-level conditions — can be worth the extra cost in credits, especially for smaller teams or single-service repositories where the filtering savings are marginal.
+
 ### Pipeline parameters (main config)
 
 `config.yml` defines two workflows controlled by pipeline parameters:
@@ -67,6 +78,12 @@ A [scheduled pipeline](https://circleci.com/docs/scheduled-pipelines/) triggers 
 
 The nightly workflow runs the full test suite (unit, integration, dependency scan), builds the Docker image, scans the container with Snyk, and verifies the image starts and responds correctly. It does **not** deploy — its purpose is to catch newly disclosed vulnerabilities in dependencies or the base image and to confirm the build remains healthy between code changes.
 
+
+Because nightly pipelines aren't pressured to complete as quickly as commit-triggered validation, they're a good place for work that would slow down the developer feedback loop:
+
+- **Longer-running test suites** — end-to-end tests, performance benchmarks, or fuzz testing that would be too slow to gate every push can run nightly without blocking anyone.
+- **Fresh dependency resolution** — nightly builds can skip the cache and install packages from scratch (`pip install --no-cache-dir`), verifying that dependencies still resolve cleanly rather than relying on a potentially stale cache. This catches issues like yanked packages or incompatible transitive dependency updates that cached installs would mask.
+- **Full container rebuild** — similarly, building the Docker image without layer caching ensures the base image and all layers are pulled fresh, surfacing upstream breakage in base images or system packages.
 
 ## Security measures
 
@@ -97,7 +114,7 @@ On feature branches, none of the deployment or release contexts are attached —
 
 The pipeline uses several strategies to keep feedback fast and avoid redundant work:
 
-- **Parallel quality gates** — unit tests, integration tests, and the Snyk dependency scan run concurrently after dependency installation, so total validation time equals the slowest job rather than the sum of all three.
+- **Parallel quality gates** — unit tests, integration tests, and the Snyk dependency scan run concurrently as individual jobs after dependency installation, so total validation time equals the slowest job rather than the sum of all three. Each test suite fails independently, allowing you to pinpoint and resolve any regressions quicker.
 - **Dependency caching** — pip packages are cached with a key derived from `requirements.txt` and the executor architecture. Cache hits skip installation entirely on subsequent runs.
 - **Workspace handoff** — installed dependencies are persisted to a workspace once and attached by every downstream job, avoiding repeated pip installs. The built Docker image tarball is similarly passed through the workspace to verification, scanning, and push jobs.
 - **Docker layer caching** — the `build-docker` job uses `setup_remote_docker` which allows Docker to reuse unchanged layers from previous builds, reducing image build times on frequent merges.
@@ -133,7 +150,7 @@ The `deploy-digitalocean` job:
 3. Triggers a DigitalOcean App Platform deployment via `doctl apps create-deployment --wait`
 4. Updates the release status to `SUCCESS` or `FAILED` based on the outcome
 
-This surfaces deployment history in CircleCI's releases view and makes rollbacks traceable.
+This surfaces deployment history in CircleCI's Deploys tab and makes rollbacks traceable.
 
 
 ## Future optimizations
