@@ -31,6 +31,17 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 
+def template_context(request: Request, **context: object) -> dict[str, object]:
+    settings = get_settings()
+    return {
+        "request": request,
+        "posthog_enabled": bool(settings.POSTHOG_PUBLIC_KEY),
+        "posthog_public_key": settings.POSTHOG_PUBLIC_KEY,
+        "posthog_host": settings.POSTHOG_HOST,
+        **context,
+    }
+
+
 def slugify(value: str) -> str:
     normalized = unicodedata.normalize("NFKD", value)
     ascii_value = normalized.encode("ascii", "ignore").decode("ascii")
@@ -164,7 +175,7 @@ def get_index(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
         .order_by(City.retrieved_at.desc(), City.city_name.asc())
     ).all()
     cards = [build_city_card(city) for city in cities]
-    return templates.TemplateResponse(request, "index.html", {"request": request, "cities": cards})
+    return templates.TemplateResponse(request, "index.html", template_context(request, cities=cards))
 
 
 @app.get("/cities", response_model=list[CityListItem])
@@ -223,7 +234,7 @@ def get_requests_page(request: Request, db: Session = Depends(get_db)) -> HTMLRe
     return templates.TemplateResponse(
         request,
         "requests.html",
-        {"request": request, "city_requests": city_requests},
+        template_context(request, city_requests=city_requests),
     )
 
 
@@ -234,10 +245,10 @@ def get_city_page(slug: str, request: Request, db: Session = Depends(get_db)) ->
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="City page not found")
 
     intel = CityIntel.model_validate(city.intel) if city.intel else None
-    context = {
-        "request": request,
-        "city": city,
-        "intel": intel,
-        "flag": country_flag(city.country_code),
-    }
+    context = template_context(
+        request,
+        city=city,
+        intel=intel,
+        flag=country_flag(city.country_code),
+    )
     return templates.TemplateResponse(request, "city.html", context)
