@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy import select
 
+from app.config import get_settings
 from app.models import City, CityRequest
 
 pytestmark = pytest.mark.integration
@@ -118,6 +119,32 @@ def test_get_index_sorts_latest_first(client, db_session, sample_city):
     assert maribor_index != -1
     assert barcelona_index != -1
     assert maribor_index < barcelona_index
+
+
+def test_posthog_snippet_not_rendered_without_public_key(client):
+    get_settings.cache_clear()
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "posthog.init(" not in response.text
+
+
+def test_posthog_snippet_rendered_when_enabled(client, monkeypatch):
+    monkeypatch.setenv("POSTHOG_PUBLIC_KEY", "phc_test_public_key")
+    monkeypatch.setenv("POSTHOG_HOST", "https://eu.i.posthog.com")
+    get_settings.cache_clear()
+
+    try:
+        response = client.get("/")
+    finally:
+        get_settings.cache_clear()
+
+    assert response.status_code == 200
+    assert "posthog.init(" in response.text
+    assert '"phc_test_public_key"' in response.text
+    assert '"https://eu.i.posthog.com"' in response.text
+    assert 'person_profiles: "identified_only"' in response.text
 
 
 def test_get_city_html_hides_apps_without_store_links(client, db_session):

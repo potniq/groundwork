@@ -24,6 +24,8 @@ export PERPLEXITY_API_KEY="your-key"
 export ADMIN_API_KEY="your-secret-admin-key"
 export VERIFY_GENERATED_URLS="true"
 export URL_VERIFICATION_TIMEOUT_SECONDS="8"
+export POSTHOG_PUBLIC_KEY="phc_your_project_key" # optional
+export POSTHOG_HOST="https://us.i.posthog.com"   # optional
 uv run uvicorn app.main:app --reload --port 8000
 
 # Run tests
@@ -146,6 +148,13 @@ Generate a starter set of 30 cities sequentially:
   - `pytest -m integration tests/integration`
 - Perplexity responses are mocked with `pytest-httpx`
 - Coverage includes city creation/auth, custom slug, city requests flow, and unit helpers
+
+## Analytics
+
+- PostHog web analytics is optional and anonymous by default.
+- Set `POSTHOG_PUBLIC_KEY` to enable the browser snippet.
+- `POSTHOG_HOST` defaults to `https://us.i.posthog.com`; override it if your PostHog project is hosted elsewhere.
+- Groundwork initializes PostHog with `person_profiles="identified_only"` so anonymous traffic is captured without identifying users.
 
 ## CircleCI Deploy Flow
 

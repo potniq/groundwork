@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     VERIFY_GENERATED_URLS: bool = True
     URL_VERIFICATION_TIMEOUT_SECONDS: float = 8.0
     ADMIN_API_KEY: str
+    POSTHOG_PUBLIC_KEY: str | None = None
+    POSTHOG_HOST: str = "https://us.i.posthog.com"
 
 
 @lru_cache(maxsize=1)
