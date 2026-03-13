@@ -155,6 +155,26 @@ Generate a starter set of 30 cities sequentially:
 - Set `POSTHOG_PUBLIC_KEY` to enable the browser snippet.
 - `POSTHOG_HOST` defaults to `https://us.i.posthog.com`; override it if your PostHog project is hosted elsewhere.
 - Groundwork initializes PostHog with `person_profiles="identified_only"` so anonymous traffic is captured without identifying users.
+- Groundwork also sends explicit product events for meaningful user actions instead of relying only on generic click autocapture.
+- No `identify()` call is made, and custom events deliberately avoid sending the request-form email or raw free-text city request.
+
+### Event Taxonomy
+
+- Built-in PostHog events:
+  - `$pageview`
+  - `$pageleave`
+- Custom Groundwork events:
+  - `city_search_performed`: homepage search used, with query length and result count.
+  - `city_guide_opened`: a guide card was opened from the homepage, including city and entrypoint (`card_title` or `card_cta`).
+  - `city_guide_viewed`: a city guide page loaded, including city and guide-shape metadata.
+  - `guide_section_viewed`: a guide section entered the viewport for the first time.
+  - `guide_resource_clicked`: a user clicked an outbound authority, app-store, payment, airport, or delay-info link.
+  - `feedback_button_clicked`: the city-guide feedback trigger was clicked.
+  - `city_request_started`: a user engaged with the request-city form.
+  - `city_request_submitted`: a city request was submitted successfully.
+  - `city_request_submission_failed`: request submission failed client-side or server-side.
+  - `navigation_clicked`: header navigation back to home.
+  - `external_link_clicked`: footer outbound links to Potniq or GitHub.
 
 ## CircleCI Deploy Flow
 

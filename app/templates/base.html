@@ -32,7 +32,13 @@
 <body>
 <header class="site-header">
     <div class="container header-inner">
-        <a href="/" class="brand" aria-label="Groundwork home">
+        <a
+            href="/"
+            class="brand"
+            aria-label="Groundwork home"
+            data-analytics-event="navigation_clicked"
+            data-analytics-props='{{ {"destination": "home", "location": "header_brand"}|tojson }}'
+        >
             <img class="brand-logo" src="/static/groundwork_logo.png" alt="Groundwork">
             <div class="brand-text">
                 <span class="brand-name">Groundwork</span>
@@ -53,9 +59,32 @@
             <p class="footer-tagline">On behalf of the entire crew, thank you for travelling with Groundwork.</p>
         </div>
         <p class="footer-disclaimer">*This is an experiment. City guides are AI-generated and may contain errors. Please do not rely on this as your sole source of transit information.</p>
-        <p class="footer-legal">Please keep your transit card topped up. A <a href="https://potniq.com" target="_blank" rel="noopener noreferrer">Potniq</a> service.</p>
-        <p class="footer-legal"><a href="https://github.com/potniq/groundwork" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+        <p class="footer-legal">
+            Please keep your transit card topped up. A
+            <a
+                href="https://potniq.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-analytics-event="external_link_clicked"
+                data-analytics-props='{{ {"destination": "potniq", "location": "footer"}|tojson }}'
+            >Potniq</a>
+            service.
+        </p>
+        <p class="footer-legal">
+            <a
+                href="https://github.com/potniq/groundwork"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-analytics-event="external_link_clicked"
+                data-analytics-props='{{ {"destination": "github_repo", "location": "footer"}|tojson }}'
+            >GitHub</a>
+        </p>
     </div>
 </footer>
+<script>
+    window.GROUNDWORK_ANALYTICS_CONTEXT = {{ analytics_context|default({})|tojson }};
+</script>
+<script src="/static/analytics.js"></script>
+{% block page_scripts %}{% endblock %}
 </body>
 </html>

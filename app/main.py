@@ -175,7 +175,18 @@ def get_index(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
         .order_by(City.retrieved_at.desc(), City.city_name.asc())
     ).all()
     cards = [build_city_card(city) for city in cities]
-    return templates.TemplateResponse(request, "index.html", template_context(request, cities=cards))
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        template_context(
+            request,
+            cities=cards,
+            analytics_context={
+                "page_name": "home",
+                "city_count": len(cards),
+            },
+        ),
+    )
 
 
 @app.get("/cities", response_model=list[CityListItem])
@@ -234,7 +245,14 @@ def get_requests_page(request: Request, db: Session = Depends(get_db)) -> HTMLRe
     return templates.TemplateResponse(
         request,
         "requests.html",
-        template_context(request, city_requests=city_requests),
+        template_context(
+            request,
+            city_requests=city_requests,
+            analytics_context={
+                "page_name": "requests",
+                "request_count": len(city_requests),
+            },
+        ),
     )
 
 
@@ -245,10 +263,22 @@ def get_city_page(slug: str, request: Request, db: Session = Depends(get_db)) ->
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="City page not found")
 
     intel = CityIntel.model_validate(city.intel) if city.intel else None
+    has_metro = bool(intel and any(mode.type == "metro" for mode in intel.modes))
     context = template_context(
         request,
         city=city,
         intel=intel,
         flag=country_flag(city.country_code),
+        analytics_context={
+            "page_name": "city_guide",
+            "city_slug": city.slug,
+            "city_name": city.city_name,
+            "country": city.country,
+            "authority_count": len(intel.authorities) if intel else 0,
+            "mode_count": len(intel.modes) if intel else 0,
+            "payment_method_count": len(intel.payment_methods) if intel else 0,
+            "airport_connection_count": len(intel.airport_connections) if intel else 0,
+            "has_metro": has_metro,
+        },
     )
     return templates.TemplateResponse(request, "city.html", context)
