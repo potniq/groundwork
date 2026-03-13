@@ -243,6 +243,10 @@
 {% if intel %}
 <script>
 if (window.groundworkAnalytics) {
+  window.groundworkAnalytics.log('info', 'City guide analytics ready', {
+    city_slug: {{ city.slug|tojson }},
+    city_name: {{ city.city_name|tojson }}
+  });
   window.groundworkAnalytics.capture('city_guide_viewed');
   window.groundworkAnalytics.attachSectionObserver('[data-analytics-section]', 'guide_section_viewed');
 }

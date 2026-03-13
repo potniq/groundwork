@@ -61,13 +61,61 @@
     return cleaned;
   }
 
-  function capture(eventName, properties) {
+  function writeConsole(level, message, properties) {
+    const details = cleanProperties(properties);
+    const consoleMethod =
+      level === 'error' ? console.error : level === 'warn' || level === 'warning' ? console.warn : console.info;
+
+    if (Object.keys(details).length > 0) {
+      consoleMethod(`[Groundwork analytics] ${message}`, details);
+      return;
+    }
+
+    consoleMethod(`[Groundwork analytics] ${message}`);
+  }
+
+  function sendEvent(eventName, properties) {
     const posthog = getPostHog();
     if (!posthog || !eventName) {
       return;
     }
 
     posthog.capture(eventName, cleanProperties({ ...getContext(), ...properties }));
+  }
+
+  function capture(eventName, properties) {
+    if (!eventName) {
+      return;
+    }
+
+    writeConsole('info', `Captured ${eventName}`, properties);
+    sendEvent(eventName, properties);
+  }
+
+  function log(level, message, properties) {
+    writeConsole(level, message, properties);
+    sendEvent('client_log', {
+      log_level: level,
+      message,
+      ...properties,
+    });
+  }
+
+  function captureException(error, properties) {
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
+    const posthog = getPostHog();
+
+    writeConsole('error', normalizedError.message, properties);
+
+    if (!posthog || typeof posthog.captureException !== 'function') {
+      sendEvent('client_exception', {
+        message: normalizedError.message,
+        ...properties,
+      });
+      return;
+    }
+
+    posthog.captureException(normalizedError, cleanProperties({ ...getContext(), ...properties }));
   }
 
   function syncSuperProperties() {
@@ -85,6 +133,7 @@
     const superProperties = cleanProperties(getSuperProperties());
     if (Object.keys(superProperties).length > 0) {
       posthog.register(superProperties);
+      writeConsole('info', 'Registered PostHog super properties', superProperties);
     }
   }
 
@@ -182,7 +231,9 @@
   window.groundworkAnalytics = {
     attachSectionObserver,
     capture,
+    captureException,
     debounce,
+    log,
     syncSuperProperties,
   };
 

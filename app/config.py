@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     ADMIN_API_KEY: str
     POSTHOG_PUBLIC_KEY: str | None = None
     POSTHOG_HOST: str = "https://us.i.posthog.com"
+    POSTHOG_DEBUG: bool = False
+    POSTHOG_CAPTURE_CONSOLE_ERRORS: bool = True
+    POSTHOG_RECORD_CONSOLE_LOGS: bool = True
 
 
 @lru_cache(maxsize=1)

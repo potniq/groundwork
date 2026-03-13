@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}{{ error_title }} | Groundwork{% endblock %}
+
+{% block meta %}
+{% set base_url = request.url.scheme ~ "://" ~ request.url.netloc %}
+<meta name="description" content="{{ error_message }}">
+<meta property="og:title" content="{{ error_title }} | Groundwork">
+<meta property="og:description" content="{{ error_message }}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Groundwork by Potniq">
+<meta property="og:image" content="{{ base_url }}/static/groundwork_logo.png">
+<meta property="og:url" content="{{ request.url }}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{ error_title }} | Groundwork">
+<meta name="twitter:description" content="{{ error_message }}">
+<meta name="twitter:image" content="{{ base_url }}/static/groundwork_logo.png">
+{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <p class="eyebrow">Error</p>
+    <h1>{{ status_code }} · {{ error_title }}</h1>
+    <p>{{ error_message }}</p>
+    <p class="subdued">Path: {{ request.url.path }}</p>
+    <a class="card-link" href="/">Return to Groundwork home</a>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+if (window.groundworkAnalytics) {
+  const eventName = {{ ("page_not_found_viewed" if error_kind == "page_not_found" else "application_error_viewed")|tojson }};
+  const message = {{ ("Rendered page_not_found_viewed" if error_kind == "page_not_found" else "Rendered application_error_viewed")|tojson }};
+  const severity = {{ ("warning" if error_kind == "page_not_found" else "error")|tojson }};
+
+  window.groundworkAnalytics.capture(eventName);
+  window.groundworkAnalytics.log(severity, message, {
+    status_code: {{ status_code|tojson }},
+    path: {{ request.url.path|tojson }}
+  });
+}
+</script>
+{% endblock %}

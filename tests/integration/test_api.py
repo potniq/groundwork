@@ -35,6 +35,15 @@ def test_health(client):
     assert response.json() == {"status": "ok"}
 
 
+def test_unknown_html_page_renders_error_template(client):
+    response = client.get("/missing-page", headers={"Accept": "text/html"})
+
+    assert response.status_code == 404
+    assert "Page not found" in response.text
+    assert "window.groundworkAnalytics.capture(eventName);" in response.text
+    assert "const message =" in response.text
+
+
 def test_get_cities_empty(client):
     response = client.get("/cities")
     assert response.status_code == 200
@@ -97,13 +106,25 @@ def test_get_city_html(client, sample_city):
 
 
 def test_index_includes_custom_analytics_hooks(client, sample_city):
-    response = client.get("/")
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setenv("POSTHOG_PUBLIC_KEY", "phc_test_public_key")
+    monkeypatch.setenv("POSTHOG_HOST", "https://eu.i.posthog.com")
+    get_settings.cache_clear()
+
+    try:
+        response = client.get("/")
+    finally:
+        get_settings.cache_clear()
+        monkeypatch.undo()
 
     assert response.status_code == 200
     assert "/static/analytics.js" in response.text
     assert '"page_name": "home"' in response.text
     assert '"current_page_name": "home"' in response.text
     assert '"current_city_slug"' in response.text
+    assert "capture_exceptions" in response.text
+    assert "analytics.log('info', 'Homepage analytics ready'" in response.text
+    assert "posthog_loaded" in response.text
     assert "city_search_performed" in response.text
     assert "city_guide_opened" in response.text
     assert "city_request_submitted" in response.text
