@@ -102,6 +102,8 @@ def test_index_includes_custom_analytics_hooks(client, sample_city):
     assert response.status_code == 200
     assert "/static/analytics.js" in response.text
     assert '"page_name": "home"' in response.text
+    assert '"current_page_name": "home"' in response.text
+    assert '"current_city_slug"' in response.text
     assert "city_search_performed" in response.text
     assert "city_guide_opened" in response.text
     assert "city_request_submitted" in response.text
@@ -114,10 +116,12 @@ def test_city_html_includes_custom_analytics_hooks(client, sample_city):
     assert response.status_code == 200
     assert '"page_name": "city_guide"' in response.text
     assert f'"city_slug": "{sample_city.slug}"' in response.text
+    assert f'"current_city_slug": "{sample_city.slug}"' in response.text
+    assert f'"current_city_name": "{sample_city.city_name}"' in response.text
     assert "city_guide_viewed" in response.text
     assert "guide_section_viewed" in response.text
     assert "guide_resource_clicked" in response.text
-    assert "feedback_button_clicked" in response.text
+    assert "feedback_survey_requested" in response.text
     assert 'class="feedback-button"' in response.text
     assert 'data-analytics-section="transport_authorities"' in response.text
 
@@ -128,6 +132,7 @@ def test_requests_page_includes_analytics_context(client):
     assert response.status_code == 200
     assert '"page_name": "requests"' in response.text
     assert '"request_count": 0' in response.text
+    assert '"current_page_name": "requests"' in response.text
 
 
 def test_get_index_sorts_latest_first(client, db_session, sample_city):
