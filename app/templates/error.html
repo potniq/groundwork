@@ -31,10 +31,11 @@
 <script>
 if (window.groundworkAnalytics) {
   const eventName = {{ ("page_not_found_viewed" if error_kind == "page_not_found" else "application_error_viewed")|tojson }};
+  const message = {{ ("Rendered page_not_found_viewed" if error_kind == "page_not_found" else "Rendered application_error_viewed")|tojson }};
   const severity = {{ ("warning" if error_kind == "page_not_found" else "error")|tojson }};
 
   window.groundworkAnalytics.capture(eventName);
-  window.groundworkAnalytics.log(severity, `Rendered ${eventName}`, {
+  window.groundworkAnalytics.log(severity, message, {
     status_code: {{ status_code|tojson }},
     path: {{ request.url.path|tojson }}
   });

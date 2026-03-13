@@ -106,7 +106,16 @@ def test_get_city_html(client, sample_city):
 
 
 def test_index_includes_custom_analytics_hooks(client, sample_city):
-    response = client.get("/")
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setenv("POSTHOG_PUBLIC_KEY", "phc_test_public_key")
+    monkeypatch.setenv("POSTHOG_HOST", "https://eu.i.posthog.com")
+    get_settings.cache_clear()
+
+    try:
+        response = client.get("/")
+    finally:
+        get_settings.cache_clear()
+        monkeypatch.undo()
 
     assert response.status_code == 200
     assert "/static/analytics.js" in response.text
