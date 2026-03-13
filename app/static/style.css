@@ -467,6 +467,11 @@ label {
     gap: 1.25rem;
 }
 
+.city-hero-copy {
+    display: grid;
+    gap: 0.55rem;
+}
+
 .city-hero p:last-child {
     margin-bottom: 0;
 }
@@ -500,6 +505,34 @@ label {
 .status-pill.failed {
     color: var(--gw-danger);
     background: var(--gw-danger-bg);
+}
+
+.feedback-button {
+    width: fit-content;
+    border: 1px solid var(--gw-border-strong);
+    background: var(--gw-surface);
+    color: var(--gw-title);
+    border-radius: var(--gw-radius-sm);
+    padding: 0.6rem 1.1rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    box-shadow: var(--gw-shadow-sm);
+    transition:
+        border-color 0.15s var(--gw-ease),
+        background 0.15s var(--gw-ease),
+        color 0.15s var(--gw-ease),
+        transform 0.1s var(--gw-ease);
+}
+
+.feedback-button:hover {
+    border-color: var(--gw-teal-500);
+    background: var(--gw-teal-100);
+    color: var(--gw-link-hover);
+}
+
+.feedback-button:active {
+    transform: scale(0.98);
 }
 
 /* --- KPI grid --- */

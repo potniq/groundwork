@@ -43,7 +43,11 @@
     {% for city in cities %}
     <article class="city-card" data-search="{{ (city.city_name ~ ' ' ~ city.country)|lower }}">
         <h2 class="city-card-title">
-            <a href="/{{ city.slug }}">{{ city.city_name }}, {{ city.country }}</a>
+            <a
+                href="/{{ city.slug }}"
+                data-analytics-event="city_guide_opened"
+                data-analytics-props='{{ {"city_slug": city.slug, "city_name": city.city_name, "country": city.country, "entrypoint": "card_title", "position": loop.index}|tojson }}'
+            >{{ city.city_name }}, {{ city.country }}</a>
             <span class="flag">{{ city.flag }}</span>
         </h2>
         <ul class="facts">
@@ -51,7 +55,12 @@
             <li><span>Contactless</span><strong class="{{ 'yes' if city.contactless else 'no' }}">{{ ("&#10003;" if city.contactless else "&#10005;")|safe }}</strong></li>
             <li><span>Rideshare</span><strong>{{ city.rideshare }}</strong></li>
         </ul>
-        <a class="card-link" href="/{{ city.slug }}">Open guide</a>
+        <a
+            class="card-link"
+            href="/{{ city.slug }}"
+            data-analytics-event="city_guide_opened"
+            data-analytics-props='{{ {"city_slug": city.slug, "city_name": city.city_name, "country": city.country, "entrypoint": "card_cta", "position": loop.index}|tojson }}'
+        >Open guide</a>
     </article>
     {% endfor %}
 </section>
@@ -79,13 +88,50 @@
     </form>
     <p id="request-feedback" class="subdued hidden" role="status" aria-live="polite"></p>
 </section>
+{% endblock %}
 
+{% block page_scripts %}
 <script>
+const analytics = window.groundworkAnalytics;
 const searchInput = document.getElementById('city-search');
 const cards = Array.from(document.querySelectorAll('.city-card'));
 const emptyFilter = document.getElementById('empty-filter');
 const requestForm = document.getElementById('city-request-form');
 const requestFeedback = document.getElementById('request-feedback');
+const requestRawInput = document.getElementById('request-raw-input');
+const requestEmailInput = document.getElementById('request-email');
+
+let lastTrackedSearchQuery = '';
+let requestStarted = false;
+
+const trackSearch =
+  analytics && typeof analytics.debounce === 'function'
+    ? analytics.debounce((query, visibleCount) => {
+        if (!query || query === lastTrackedSearchQuery) {
+          return;
+        }
+
+        lastTrackedSearchQuery = query;
+        analytics.capture('city_search_performed', {
+          query_length: query.length,
+          results_count: visibleCount,
+          has_results: visibleCount > 0,
+          total_city_count: cards.length
+        });
+      }, 300)
+    : null;
+
+function trackRequestStarted() {
+  if (requestStarted || !analytics) {
+    return;
+  }
+
+  requestStarted = true;
+  analytics.capture('city_request_started', {
+    has_prefilled_city: Boolean(requestRawInput && requestRawInput.value.trim()),
+    has_prefilled_email: Boolean(requestEmailInput && requestEmailInput.value.trim())
+  });
+}
 
 if (searchInput) {
   searchInput.addEventListener('input', (event) => {
@@ -104,18 +150,38 @@ if (searchInput) {
     if (emptyFilter) {
       emptyFilter.classList.toggle('hidden', visibleCount > 0 || query.length === 0);
     }
+
+    if (query.length === 0) {
+      lastTrackedSearchQuery = '';
+      return;
+    }
+
+    if (trackSearch) {
+      trackSearch(query, visibleCount);
+    }
   });
 }
 
 if (requestForm) {
+  requestForm.addEventListener('focusin', trackRequestStarted);
+  requestForm.addEventListener('input', trackRequestStarted);
+
   requestForm.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     const formData = new FormData(requestForm);
     const rawInput = String(formData.get('raw_input') || '').trim();
     const email = String(formData.get('email') || '').trim();
+    let failureTracked = false;
 
     if (!rawInput) {
+      if (analytics) {
+        analytics.capture('city_request_submission_failed', {
+          reason: 'missing_city_name',
+          email_provided: Boolean(email)
+        });
+      }
+
       if (requestFeedback) {
         requestFeedback.textContent = 'Please enter a city.';
         requestFeedback.classList.remove('hidden');
@@ -136,16 +202,38 @@ if (requestForm) {
       });
 
       if (!response.ok) {
+        if (analytics) {
+          analytics.capture('city_request_submission_failed', {
+            reason: 'request_api_error',
+            email_provided: Boolean(email),
+            status_code: response.status
+          });
+        }
+        failureTracked = true;
         throw new Error('Request failed');
       }
 
       const data = await response.json();
       requestForm.reset();
+      requestStarted = false;
+      if (analytics) {
+        analytics.capture('city_request_submitted', {
+          email_provided: Boolean(email),
+          request_length: rawInput.length
+        });
+      }
       if (requestFeedback) {
         requestFeedback.textContent = data.message || 'Thanks, we received your city request.';
         requestFeedback.classList.remove('hidden');
       }
     } catch (_) {
+      if (analytics && !failureTracked) {
+        analytics.capture('city_request_submission_failed', {
+          reason: 'network_error',
+          email_provided: Boolean(email)
+        });
+      }
+
       if (requestFeedback) {
         requestFeedback.textContent = 'Could not submit request right now. Please try again.';
         requestFeedback.classList.remove('hidden');
