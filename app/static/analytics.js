@@ -25,6 +25,28 @@
     return context;
   }
 
+  function getSuperProperties() {
+    if (typeof window === 'undefined') {
+      return {};
+    }
+
+    const properties = window.GROUNDWORK_ANALYTICS_SUPER_PROPERTIES;
+    if (!properties || typeof properties !== 'object') {
+      return {};
+    }
+
+    return properties;
+  }
+
+  function getResetProperties() {
+    if (typeof window === 'undefined') {
+      return [];
+    }
+
+    const properties = window.GROUNDWORK_ANALYTICS_RESET_PROPERTIES;
+    return Array.isArray(properties) ? properties : [];
+  }
+
   function cleanProperties(properties) {
     const cleaned = {};
 
@@ -46,6 +68,24 @@
     }
 
     posthog.capture(eventName, cleanProperties({ ...getContext(), ...properties }));
+  }
+
+  function syncSuperProperties() {
+    const posthog = getPostHog();
+    if (!posthog) {
+      return;
+    }
+
+    getResetProperties().forEach((propertyName) => {
+      if (typeof propertyName === 'string' && propertyName) {
+        posthog.unregister(propertyName);
+      }
+    });
+
+    const superProperties = cleanProperties(getSuperProperties());
+    if (Object.keys(superProperties).length > 0) {
+      posthog.register(superProperties);
+    }
   }
 
   function parseProperties(element) {
@@ -143,11 +183,20 @@
     attachSectionObserver,
     capture,
     debounce,
+    syncSuperProperties,
   };
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', attachTrackedClicks, { once: true });
+    document.addEventListener(
+      'DOMContentLoaded',
+      () => {
+        syncSuperProperties();
+        attachTrackedClicks();
+      },
+      { once: true },
+    );
   } else {
+    syncSuperProperties();
     attachTrackedClicks();
   }
 })();

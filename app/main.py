@@ -185,6 +185,14 @@ def get_index(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
                 "page_name": "home",
                 "city_count": len(cards),
             },
+            analytics_super_properties={
+                "current_page_name": "home",
+            },
+            analytics_reset_properties=[
+                "current_city_slug",
+                "current_city_name",
+                "current_country",
+            ],
         ),
     )
 
@@ -252,6 +260,14 @@ def get_requests_page(request: Request, db: Session = Depends(get_db)) -> HTMLRe
                 "page_name": "requests",
                 "request_count": len(city_requests),
             },
+            analytics_super_properties={
+                "current_page_name": "requests",
+            },
+            analytics_reset_properties=[
+                "current_city_slug",
+                "current_city_name",
+                "current_country",
+            ],
         ),
     )
 
@@ -279,6 +295,12 @@ def get_city_page(slug: str, request: Request, db: Session = Depends(get_db)) ->
             "payment_method_count": len(intel.payment_methods) if intel else 0,
             "airport_connection_count": len(intel.airport_connections) if intel else 0,
             "has_metro": has_metro,
+        },
+        analytics_super_properties={
+            "current_page_name": "city_guide",
+            "current_city_slug": city.slug,
+            "current_city_name": city.city_name,
+            "current_country": city.country,
         },
     )
     return templates.TemplateResponse(request, "city.html", context)

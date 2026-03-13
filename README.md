@@ -157,6 +157,7 @@ Generate a starter set of 30 cities sequentially:
 - Groundwork initializes PostHog with `person_profiles="identified_only"` so anonymous traffic is captured without identifying users.
 - Groundwork also sends explicit product events for meaningful user actions instead of relying only on generic click autocapture.
 - No `identify()` call is made, and custom events deliberately avoid sending the request-form email or raw free-text city request.
+- City pages also register PostHog super properties so all subsequent events on that page can be attributed to the current city guide.
 
 ### Event Taxonomy
 
@@ -169,12 +170,17 @@ Generate a starter set of 30 cities sequentially:
   - `city_guide_viewed`: a city guide page loaded, including city and guide-shape metadata.
   - `guide_section_viewed`: a guide section entered the viewport for the first time.
   - `guide_resource_clicked`: a user clicked an outbound authority, app-store, payment, airport, or delay-info link.
-  - `feedback_button_clicked`: the city-guide feedback trigger was clicked.
+  - `feedback_survey_requested`: the city-guide feedback trigger was clicked. Use this event in PostHog survey display conditions instead of a CSS selector trigger.
   - `city_request_started`: a user engaged with the request-city form.
   - `city_request_submitted`: a city request was submitted successfully.
   - `city_request_submission_failed`: request submission failed client-side or server-side.
   - `navigation_clicked`: header navigation back to home.
   - `external_link_clicked`: footer outbound links to Potniq or GitHub.
+
+### Survey Triggering
+
+- For the city feedback survey, prefer PostHog's "user sends event" display condition with `feedback_survey_requested`.
+- Do not target `.feedback-button` as a CSS selector in survey conditions, because selector-based triggers can fire whenever the element is present on the page.
 
 ## CircleCI Deploy Flow
 
