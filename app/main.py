@@ -1,15 +1,18 @@
 import json
+import logging
 import re
 import unicodedata
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from time import perf_counter
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -25,19 +28,61 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Groundwork by Potniq", lifespan=lifespan)
+logger = logging.getLogger("groundwork.app")
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = perf_counter()
+
+    try:
+        response = await call_next(request)
+    except Exception:
+        duration_ms = round((perf_counter() - start_time) * 1000, 2)
+        logger.exception(
+            "Unhandled request error",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "duration_ms": duration_ms,
+            },
+        )
+        raise
+
+    duration_ms = round((perf_counter() - start_time) * 1000, 2)
+    log_details = {
+        "method": request.method,
+        "path": request.url.path,
+        "status_code": response.status_code,
+        "duration_ms": duration_ms,
+    }
+
+    if response.status_code >= 500:
+        logger.error("Request completed with server error", extra=log_details)
+    elif response.status_code >= 400:
+        logger.warning("Request completed with client error", extra=log_details)
+    else:
+        logger.info("Request completed", extra=log_details)
+
+    return response
+
+
 def template_context(request: Request, **context: object) -> dict[str, object]:
     settings = get_settings()
+    hostname = (request.url.hostname or "").lower()
+    posthog_debug = settings.POSTHOG_DEBUG or hostname in {"127.0.0.1", "localhost"}
     return {
         "request": request,
         "posthog_enabled": bool(settings.POSTHOG_PUBLIC_KEY),
         "posthog_public_key": settings.POSTHOG_PUBLIC_KEY,
         "posthog_host": settings.POSTHOG_HOST,
+        "posthog_debug": posthog_debug,
+        "posthog_capture_console_errors": settings.POSTHOG_CAPTURE_CONSOLE_ERRORS,
+        "posthog_record_console_logs": settings.POSTHOG_RECORD_CONSOLE_LOGS,
         **context,
     }
 
@@ -54,6 +99,56 @@ def country_flag(country_code: str) -> str:
     if len(code) != 2 or not code.isalpha():
         return ""
     return "".join(chr(127397 + ord(char)) for char in code)
+
+
+def wants_html(request: Request) -> bool:
+    accept = request.headers.get("accept", "").lower()
+    return "text/html" in accept
+
+
+def should_render_html_error_page(request: Request) -> bool:
+    if request.method != "GET" or not wants_html(request):
+        return False
+
+    path = request.url.path
+    if path.startswith("/static") or path.startswith("/cities") or path == "/health":
+        return False
+
+    return True
+
+
+def render_error_page(
+    request: Request,
+    status_code: int,
+    title: str,
+    message: str,
+    error_kind: str,
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "error.html",
+        template_context(
+            request,
+            status_code=status_code,
+            error_title=title,
+            error_message=message,
+            analytics_context={
+                "page_name": "error",
+                "error_kind": error_kind,
+                "status_code": status_code,
+                "path": request.url.path,
+            },
+            analytics_super_properties={
+                "current_page_name": "error",
+            },
+            analytics_reset_properties=[
+                "current_city_slug",
+                "current_city_name",
+                "current_country",
+            ],
+        ),
+        status_code=status_code,
+    )
 
 
 def to_city_response(city: City) -> CityResponse:
@@ -160,6 +255,56 @@ def create_city_profile(db: Session, payload: CreateCityRequest) -> City:
     db.commit()
     db.refresh(city)
     return city
+
+
+@app.exception_handler(StarletteHTTPException)
+async def handle_http_exception(request: Request, exc: StarletteHTTPException):
+    logger.warning(
+        "HTTP exception raised",
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": exc.status_code,
+            "detail": str(exc.detail),
+        },
+    )
+
+    if should_render_html_error_page(request):
+        title = "Page not found" if exc.status_code == 404 else "Something went wrong"
+        message = (
+            "We could not find that page."
+            if exc.status_code == 404
+            else "The request could not be completed."
+        )
+        error_kind = "page_not_found" if exc.status_code == 404 else "http_error"
+        return render_error_page(request, exc.status_code, title, message, error_kind)
+
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
+@app.exception_handler(Exception)
+async def handle_unexpected_exception(request: Request, exc: Exception):
+    logger.exception(
+        "Unhandled application exception",
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+        },
+    )
+
+    if should_render_html_error_page(request):
+        return render_error_page(
+            request,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            title="Application error",
+            message="Groundwork hit an unexpected error while loading this page.",
+            error_kind="application_error",
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Internal server error"},
+    )
 
 
 @app.get("/health")

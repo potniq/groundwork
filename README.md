@@ -26,6 +26,9 @@ export VERIFY_GENERATED_URLS="true"
 export URL_VERIFICATION_TIMEOUT_SECONDS="8"
 export POSTHOG_PUBLIC_KEY="phc_your_project_key" # optional
 export POSTHOG_HOST="https://us.i.posthog.com"   # optional
+export POSTHOG_DEBUG="false"                     # optional
+export POSTHOG_CAPTURE_CONSOLE_ERRORS="true"    # optional
+export POSTHOG_RECORD_CONSOLE_LOGS="true"       # optional
 uv run uvicorn app.main:app --reload --port 8000
 
 # Run tests
@@ -154,10 +157,15 @@ Generate a starter set of 30 cities sequentially:
 - PostHog web analytics is optional and anonymous by default.
 - Set `POSTHOG_PUBLIC_KEY` to enable the browser snippet.
 - `POSTHOG_HOST` defaults to `https://us.i.posthog.com`; override it if your PostHog project is hosted elsewhere.
+- `POSTHOG_DEBUG` enables verbose PostHog SDK logging; it is also enabled automatically on `localhost` and `127.0.0.1`.
+- `POSTHOG_CAPTURE_CONSOLE_ERRORS` enables PostHog exception capture for browser console errors.
+- `POSTHOG_RECORD_CONSOLE_LOGS` records console logs alongside session replay when PostHog supports it.
 - Groundwork initializes PostHog with `person_profiles="identified_only"` so anonymous traffic is captured without identifying users.
 - Groundwork also sends explicit product events for meaningful user actions instead of relying only on generic click autocapture.
 - No `identify()` call is made, and custom events deliberately avoid sending the request-form email or raw free-text city request.
 - City pages also register PostHog super properties so all subsequent events on that page can be attributed to the current city guide.
+- Groundwork mirrors custom analytics events to the browser console and sends structured `client_log` / `client_exception` data into PostHog for handled client-side issues.
+- Browser-visible 404 and 500 pages are rendered as HTML and tracked with PostHog so broken page hits are measurable.
 
 ### Event Taxonomy
 
@@ -171,6 +179,11 @@ Generate a starter set of 30 cities sequentially:
   - `guide_section_viewed`: a guide section entered the viewport for the first time.
   - `guide_resource_clicked`: a user clicked an outbound authority, app-store, payment, airport, or delay-info link.
   - `feedback_survey_requested`: the city-guide feedback trigger was clicked. Use this event in PostHog survey display conditions instead of a CSS selector trigger.
+  - `posthog_loaded`: the PostHog SDK loaded with the current debug/error-capture settings.
+  - `client_log`: an application log line was mirrored into PostHog from the browser.
+  - `client_exception`: a handled client-side exception was captured when `captureException` was not available.
+  - `page_not_found_viewed`: an HTML 404 page was shown to the visitor.
+  - `application_error_viewed`: an HTML 500 page was shown to the visitor.
   - `city_request_started`: a user engaged with the request-city form.
   - `city_request_submitted`: a city request was submitted successfully.
   - `city_request_submission_failed`: request submission failed client-side or server-side.

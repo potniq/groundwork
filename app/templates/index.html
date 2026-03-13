@@ -203,6 +203,11 @@ if (requestForm) {
 
       if (!response.ok) {
         if (analytics) {
+          analytics.captureException(new Error('City request API returned a non-OK response'), {
+            reason: 'request_api_error',
+            status_code: response.status,
+            email_provided: Boolean(email)
+          });
           analytics.capture('city_request_submission_failed', {
             reason: 'request_api_error',
             email_provided: Boolean(email),
@@ -228,6 +233,10 @@ if (requestForm) {
       }
     } catch (_) {
       if (analytics && !failureTracked) {
+        analytics.captureException(new Error('City request submission failed before a response was received'), {
+          reason: 'network_error',
+          email_provided: Boolean(email)
+        });
         analytics.capture('city_request_submission_failed', {
           reason: 'network_error',
           email_provided: Boolean(email)
@@ -239,6 +248,12 @@ if (requestForm) {
         requestFeedback.classList.remove('hidden');
       }
     }
+  });
+}
+
+if (analytics) {
+  analytics.log('info', 'Homepage analytics ready', {
+    city_count: cards.length
   });
 }
 </script>
