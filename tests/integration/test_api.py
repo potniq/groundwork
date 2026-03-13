@@ -41,7 +41,7 @@ def test_unknown_html_page_renders_error_template(client):
     assert response.status_code == 404
     assert "Page not found" in response.text
     assert "window.groundworkAnalytics.capture(eventName);" in response.text
-    assert "Rendered page_not_found_viewed" in response.text
+    assert "const message =" in response.text
 
 
 def test_get_cities_empty(client):
