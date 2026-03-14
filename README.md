@@ -160,9 +160,9 @@ Generate a starter set of 30 cities sequentially:
 - `POSTHOG_DEBUG` enables verbose PostHog SDK logging; it is also enabled automatically on `localhost` and `127.0.0.1`.
 - `POSTHOG_CAPTURE_CONSOLE_ERRORS` enables PostHog exception capture for browser console errors.
 - `POSTHOG_RECORD_CONSOLE_LOGS` records console logs alongside session replay when PostHog supports it.
-- Groundwork initializes PostHog with `person_profiles="identified_only"` so anonymous traffic is captured without identifying users.
+- Groundwork initializes PostHog with `person_profiles="identified_only"` so anonymous traffic is captured until a user explicitly shares their email.
 - Groundwork also sends explicit product events for meaningful user actions instead of relying only on generic click autocapture.
-- No `identify()` call is made, and custom events deliberately avoid sending the request-form email or raw free-text city request.
+- When a city request is submitted with an email address, Groundwork calls `identify(email, { email, latest_requested_city })` and includes `requester_email` plus `requested_city_input` on `city_request_submitted`. This makes PostHog workflows available for thank-you and follow-up emails tied to the submitted request.
 - City pages also register PostHog super properties so all subsequent events on that page can be attributed to the current city guide.
 - Groundwork mirrors custom analytics events to the browser console and sends structured `client_log` / `client_exception` data into PostHog for handled client-side issues.
 - Browser-visible 404 and 500 pages are rendered as HTML and tracked with PostHog so broken page hits are measurable.
@@ -185,7 +185,7 @@ Generate a starter set of 30 cities sequentially:
   - `page_not_found_viewed`: an HTML 404 page was shown to the visitor.
   - `application_error_viewed`: an HTML 500 page was shown to the visitor.
   - `city_request_started`: a user engaged with the request-city form.
-  - `city_request_submitted`: a city request was submitted successfully.
+  - `city_request_submitted`: a city request was submitted successfully, including the requested city text and requester email when provided.
   - `city_request_submission_failed`: request submission failed client-side or server-side.
   - `navigation_clicked`: header navigation back to home.
   - `external_link_clicked`: footer outbound links to Potniq or GitHub.

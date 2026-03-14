@@ -128,6 +128,10 @@ def test_index_includes_custom_analytics_hooks(client, sample_city):
     assert "city_search_performed" in response.text
     assert "city_guide_opened" in response.text
     assert "city_request_submitted" in response.text
+    assert "analytics.identify(email" in response.text
+    assert "requested_city_input: rawInput" in response.text
+    assert "requester_email: email || undefined" in response.text
+    assert "thank-you email and a follow-up asking for local tips" in response.text
     assert "external_link_clicked" in response.text
 
 
