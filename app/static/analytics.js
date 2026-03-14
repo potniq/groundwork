@@ -92,6 +92,25 @@
     sendEvent(eventName, properties);
   }
 
+  function identify(distinctId, properties) {
+    const posthog = getPostHog();
+    if (!posthog || !distinctId || typeof posthog.identify !== 'function') {
+      return;
+    }
+
+    const cleanDistinctId = String(distinctId).trim();
+    if (!cleanDistinctId) {
+      return;
+    }
+
+    const cleanPersonProperties = cleanProperties(properties);
+    posthog.identify(cleanDistinctId, cleanPersonProperties);
+    writeConsole('info', 'Identified PostHog person', {
+      distinct_id: cleanDistinctId,
+      ...cleanPersonProperties,
+    });
+  }
+
   function log(level, message, properties) {
     writeConsole(level, message, properties);
     sendEvent('client_log', {
@@ -233,6 +252,7 @@
     capture,
     captureException,
     debounce,
+    identify,
     log,
     syncSuperProperties,
   };

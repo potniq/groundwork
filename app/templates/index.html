@@ -83,6 +83,7 @@
 
         <label for="request-email">Email (optional)</label>
         <input id="request-email" name="email" type="email" placeholder="you@company.com">
+        <p class="subdued">Add it if you want a thank-you email and a follow-up asking for local tips.</p>
 
         <button type="submit">Submit request</button>
     </form>
@@ -222,9 +223,17 @@ if (requestForm) {
       requestForm.reset();
       requestStarted = false;
       if (analytics) {
+        if (email) {
+          analytics.identify(email, {
+            email,
+            latest_requested_city: rawInput
+          });
+        }
         analytics.capture('city_request_submitted', {
           email_provided: Boolean(email),
-          request_length: rawInput.length
+          request_length: rawInput.length,
+          requested_city_input: rawInput,
+          requester_email: email || undefined
         });
       }
       if (requestFeedback) {
